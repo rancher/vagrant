@@ -1,0 +1,39 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# All Vagrant configuration is done below. The "2" in Vagrant.configure
+# configures the configuration version (we support older styles for
+# backwards compatibility). Please don't change it unless you know what
+# you're doing.
+#
+
+require_relative '../vagrant_rancheros_guest_plugin.rb'
+
+
+$number_of_nodes = 3
+$vm_mem = "2048"
+$vb_gui = false
+
+Vagrant.configure(2) do |config|
+  config.vm.box   = "MatthewHartstonge/RancherOS"
+
+  (1..$number_of_nodes).each do |i|
+    hostname = "node-%02d" % i
+    config.vm.guest = :linux
+    config.vm.define hostname do |node|
+        node.vm.provider "virtualbox" do |vb|
+            vb.memory = $vm_mem
+            vb.gui = $vb_gui
+            vb.customize ["modifyvm", :id, "--name", hostname]
+        end
+
+
+        ip = "172.22.101.#{i+100}"
+        node.vm.network "private_network", ip: ip
+        node.vm.hostname = hostname
+        node.vm.provision "shell", inline: "sudo ros engine switch docker-1.12.6"
+        node.vm.provision "shell", inline: "sleep 5"
+        node.vm.provision "shell", path: "script.sh"
+    end
+  end
+end
