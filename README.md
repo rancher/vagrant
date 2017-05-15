@@ -5,6 +5,10 @@ This runs RancherOS as the base OS for the nodes which doesn't have the guest to
 
 Start the server and the Rancher UI will become accessible on http://172.22.101.100:8080
 
-Starting the nodes will automatically add three nodes to the default cattle environment
+The default file will bring up a cattle environment. You can change this by editing the vagrant file variable $orchestrator, the choices are cattle, kubernetes, swarm and mesos.
 
-The default engine is set to 1.12.6 so that Kubernetes can be run, this can be changed by editing the Vagrantfile
+## Usage
+
+To use this you must have vagrant installed, which can be obtained from www.vagrantup.com
+
+clone the directory and then run **vagrant up**
