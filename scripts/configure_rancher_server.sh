@@ -11,13 +11,23 @@ done
 
 set -e
 
+
 # lookup orchestrator template id
-ENV_TEMPLATE_ID=$(docker run \
-  -v /tmp:/tmp \
-  --rm \
-  appropriate/curl \
-    -s \
-      "http://$rancher_server_ip:8080/v2-beta/projectTemplates?name=$orchestrator" | jq '.data[0].id' | tr -d '"')
+while true; do
+  ENV_TEMPLATE_ID=$(docker run \
+    -v /tmp:/tmp \
+    --rm \
+    appropriate/curl \
+      -s \
+        "http://$rancher_server_ip:8080/v2-beta/projectTemplates?name=$orchestrator" | jq '.data[0].id' | tr -d '"')
+
+  # might've received 422 InvalidReference if the templates haven't populated yet
+  if [[ "$ENV_TEMPLATE_ID" == 1pt* ]]; then
+    break
+  else
+    sleep 5
+  fi
+done
 
 # create an environment with specified orchestrator template
 docker run \
