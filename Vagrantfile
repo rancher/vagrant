@@ -11,6 +11,7 @@ require_relative 'vagrant_rancheros_guest_plugin.rb'
 #Rancher variables
 $orchestrator = "cattle"
 $rancher_server_ip = "172.22.101.100"
+$nic_type = "82545EM"
 
 #Node variables
 $number_of_nodes = 3
@@ -33,7 +34,7 @@ Vagrant.configure(2) do |config|
     rancherserver.vm.hostname = 'rancherserver'
 
     rancherserver.vm.network :private_network, ip: "172.22.101.100",
-      nic_type: "82545EM"
+      nic_type: $nic_type
 
     rancherserver.vm.provider :virtualbox do |v|
       v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
@@ -76,7 +77,7 @@ Vagrant.configure(2) do |config|
         end
 
         ip = "172.22.101.#{i+100}"
-        node.vm.network "private_network", ip: ip
+        node.vm.network "private_network", ip: ip, nic_type: $nic_type
         node.vm.hostname = hostname
         if $orchestrator == "kubernetes"
           node.vm.provision "shell", inline: "sudo ros engine switch docker-1.12.6"
