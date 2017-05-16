@@ -11,6 +11,17 @@ done
 
 set -e
 
+# disable telemetry for developers
+docker run \
+  --rm \
+  appropriate/curl \
+    -s \
+    -X POST \
+    -H 'Accept: application/json' \
+    -H 'Content-Type: application/json' \
+    -d '{"type":"setting","name":"telemetry.opt","value":"out"}' \
+      "http://$rancher_server_ip:8080/v2-beta/setting"
+
 # lookup orchestrator template id
 ENV_TEMPLATE_ID=$(docker run \
   -v /tmp:/tmp \
