@@ -17,12 +17,21 @@ if [ "$orchestrator" == "kubernetes" ] && [ ! "$(ros engine list | grep current 
   reboot now
 fi
 
-ENV_ID=$(docker run \
-  -v /tmp:/tmp \
-  --rm \
-  appropriate/curl \
-    -s \
-    "http://$rancher_server_ip:8080/v2-beta/project?name=$orchestrator" | jq '.data[0].id' | tr -d '"')
+while true; do
+  ENV_ID=$(docker run \
+    -v /tmp:/tmp \
+    --rm \
+    appropriate/curl \
+      -s \
+      "http://$rancher_server_ip:8080/v2-beta/project?name=$orchestrator" | jq '.data[0].id' | tr -d '"')
+
+  if [[ "$ENV_ID" == 1a* ]]; then
+    break
+  else
+    sleep 5
+  fi
+done
+
 
 echo Adding host to Rancher Server
 

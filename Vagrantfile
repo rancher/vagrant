@@ -13,7 +13,7 @@ $cache_ip = "172.22.101.101"
 
 #Rancher variables
 $rancher_version = "latest"
-$orchestrator = "cattle"
+$orchestrator = "kubernetes"
 $rancher_server_ip = "172.22.101.100"
 $nic_type = "82545EM"
 
@@ -50,8 +50,8 @@ Vagrant.configure(2) do |config|
       v.customize ["modifyvm", :id, "--memory", 2048]
       v.customize ["modifyvm", :id, "--name", "server"]
     end
-    server.vm.provision "shell", path: "scripts/install_nfs.sh"
     server.vm.provision "shell", path: "scripts/configure_rancher_server.sh", args: [$rancher_server_ip, $orchestrator]
+    server.vm.provision "shell", path: "scripts/install_nfs.sh"
   end
 
   # Rancher Nodes
