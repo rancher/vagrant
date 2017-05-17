@@ -3,6 +3,7 @@
 vagrant up cache
 vagrant up --no-provision
 
+sleep 15
 for x in $(seq 1 3); do
   vagrant provision server
   vagrant provision '/node-*/'
