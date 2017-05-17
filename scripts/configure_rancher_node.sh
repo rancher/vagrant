@@ -2,9 +2,19 @@
 
 rancher_server_ip=${1:-172.22.101.100}
 orchestrator=${2:-cattle}
+cache_ip=172.22.101.101
 
-if [ "$orchestrator" == "kubernetes" ]; then
-  sudo ros engine switch docker-1.12.6
+if [ ! "$(ps -ef | grep dockerd | grep -v grep | grep "$cache_ip")" ]; then
+  ros config set rancher.docker.registry_mirror "http://$cache_ip:5000"
+  ros config set rancher.system_docker.registry_mirror "http://$cache_ip:5000"
+  # bouncing the daemon results in indefinite crashloop, reboot instead
+  reboot now
+fi
+
+if [ "$orchestrator" == "kubernetes" ] && [ ! "$(ros engine list | grep current | grep docker-1.12.6)" ]; then
+  ros engine switch docker-1.12.6
+  # bouncing the daemon results in indefinite crashloop, reboot instead
+  reboot now
 fi
 
 ENV_ID=$(docker run \
