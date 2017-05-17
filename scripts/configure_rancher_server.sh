@@ -2,6 +2,18 @@
 
 rancher_server_ip=${1:-172.22.101.100}
 orchestrator=${2:-cattle}
+cache_ip=172.22.101.101
+rancher_server_version=stable
+
+if [ ! "$(ps -ef | grep dockerd | grep -v grep | grep "$cache_ip")" ]; then
+  ros config set rancher.docker.registry_mirror "http://$cache_ip:5000"
+  ros config set rancher.system_docker.registry_mirror "http://$cache_ip:5000"
+  # bouncing the daemon results in indefinite crashloop, reboot instead
+  reboot now
+fi
+
+echo Installing Rancher Server
+sudo docker run -d --restart=always -p 8080:8080 rancher/server:$rancher_server_version
 
 # wait until rancher server is ready
 while true; do
@@ -10,7 +22,6 @@ while true; do
 done
 
 set -e
-
 
 # disable telemetry for developers
 docker run \
