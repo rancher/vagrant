@@ -11,7 +11,6 @@ done
 
 set -e
 
-
 # disable telemetry for developers
 docker run \
   --rm \

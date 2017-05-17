@@ -9,8 +9,8 @@
 require_relative 'vagrant_rancheros_guest_plugin.rb'
 
 #Rancher variables
-$rancher_version = "stable"
-$orchestrator = "cattle"
+$rancher_version = "latest"
+$orchestrator = "kubernetes"
 $rancher_server_ip = "172.22.101.100"
 $nic_type = "82545EM"
 
@@ -38,6 +38,7 @@ Vagrant.configure(2) do |config|
 
     rancherserver.vm.provision "shell", path: "scripts/install_rancher_server.sh", args: $rancher_version
     rancherserver.vm.provision "shell", path: "scripts/install_nfs.sh"
+    # rancherserver.vm.provision "shell", path: "provision.sh", args: ["server", $rancher_server_ip, $orchestrator]
     rancherserver.vm.provision "shell", path: "scripts/configure_rancher_server.sh", args: [$rancher_server_ip, $orchestrator]
    end
 end
@@ -58,6 +59,7 @@ Vagrant.configure(2) do |config|
         ip = "172.22.101.#{i+100}"
         node.vm.network "private_network", ip: ip, nic_type: $nic_type
         node.vm.hostname = hostname
+        # node.vm.provision "shell", path: "provision.sh", args: ["node", $rancher_server_ip, $orchestrator]
         node.vm.provision "shell", path: "scripts/configure_rancher_node.sh", args: [$rancher_server_ip, $orchestrator]
     end
   end
