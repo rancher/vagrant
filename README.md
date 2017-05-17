@@ -14,3 +14,5 @@ The default file will bring up a cattle environment. You can change this by edit
 To use this you must have vagrant installed, which can be obtained from www.vagrantup.com
 
 clone the directory and then run **vagrant up**
+
+This has been tested with vagrant 1.9.1 and VirtualBox 5.0.32. If you experience issues with the networking it is likely related to running an older version.

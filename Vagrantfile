@@ -13,7 +13,7 @@ $cache_ip = "172.22.101.101"
 
 #Rancher variables
 $rancher_version = "latest"
-$orchestrator = "kubernetes"
+$orchestrator = "cattle"
 $rancher_server_ip = "172.22.101.100"
 $nic_type = "82545EM"
 
