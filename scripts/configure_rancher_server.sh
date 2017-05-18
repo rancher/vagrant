@@ -12,8 +12,44 @@ if [ ! "$(ps -ef | grep dockerd | grep -v grep | grep "$cache_ip")" ]; then
   sleep 5
 fi
 
+echo Install MySQL
+docker run \
+  -d \
+  --name mysql \
+  -p 3306:3306 \
+  -v mysql:/var/lib/mysql \
+  -e MYSQL_ROOT_PASSWORD=cattle \
+  mysql:5.7.18
+
+if [ $? -eq 0 ]; then
+  sleep 15
+  echo Creating database
+  docker exec -i mysql \
+    mysql \
+      --password=cattle \
+      -e "CREATE DATABASE IF NOT EXISTS cattle COLLATE = 'utf8_general_ci' CHARACTER SET = 'utf8';"
+fi
+
+SUSPEND=n
+CATTLE_JAVA_OPTS="-Xms128m -Xmx1g -XX:+HeapDumpOnOutOfMemoryError -agentlib:jdwp=transport=dt_socket,server=y,suspend=$SUSPEND,address=1044"
+
 echo Installing Rancher Server
-sudo docker run -d --restart=always -p 8080:8080 rancher/server:$rancher_server_version
+sudo docker run \
+  -d \
+  --restart=always \
+  -p 8080:8080 \
+  -p 8088:8088 \
+  -p 1044:1044 \
+  -e CATTLE_DB_CATTLE_MYSQL_HOST=mysql \
+  -e CATTLE_DB_CATTLE_MYSQL_PORT=3306 \
+  -e CATTLE_DB_CATTLE_MYSQL_NAME=cattle \
+  -e CATTLE_DB_CATTLE_USERNAME=root \
+  -e CATTLE_DB_CATTLE_PASSWORD=cattle \
+  -e CATTLE_JAVA_OPTS="$CATTLE_JAVA_OPTS" \
+  --link mysql:mysql \
+  --restart=unless-stopped \
+  --name rancher-server \
+    rancher/server:$rancher_server_version
 
 # wait until rancher server is ready
 while true; do
