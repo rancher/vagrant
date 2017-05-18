@@ -50,7 +50,7 @@ Vagrant.configure(2) do |config|
       v.customize ["modifyvm", :id, "--memory", 2048]
       v.customize ["modifyvm", :id, "--name", "server"]
     end
-    server.vm.provision "shell", path: "scripts/configure_rancher_server.sh", args: [$rancher_server_ip, $orchestrator]
+    server.vm.provision "shell", path: "scripts/configure_rancher_server.sh", args: [$rancher_server_ip, $orchestrator, $rancher_version]
     server.vm.provision "shell", path: "scripts/install_nfs.sh"
   end
 
