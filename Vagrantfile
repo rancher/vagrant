@@ -12,9 +12,9 @@ require_relative 'vagrant_rancheros_guest_plugin.rb'
 $cache_ip = "172.22.101.100"
 
 #Rancher variables
-$rancher_version = "latest"
 $orchestrator = "cattle"
 $rancher_server_ip = "172.22.101.100"
+$rancher_server_version = "latest"
 $nic_type = "82545EM"
 $rancher_server_node_count = 1
 
@@ -54,7 +54,7 @@ Vagrant.configure(2) do |config|
        ip = "172.22.101.#{i+100}"
        server.vm.network :private_network, ip: ip,nic_type: $nic_type
        server.vm.hostname = hostname
-       server.vm.provision "shell", path: "scripts/configure_rancher_server.sh", args: [$rancher_server_ip, $orchestrator, i]
+       server.vm.provision "shell", path: "scripts/configure_rancher_server.sh", args: [$rancher_server_ip, $orchestrator, i, $rancher_server_version]
      end
    end
 
