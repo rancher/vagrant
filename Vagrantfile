@@ -9,13 +9,14 @@
 require_relative 'vagrant_rancheros_guest_plugin.rb'
 
 # Proxy Registry Cache
-$cache_ip = "172.22.101.101"
+$cache_ip = "172.22.101.100"
 
 #Rancher variables
 $rancher_version = "latest"
 $orchestrator = "cattle"
 $rancher_server_ip = "172.22.101.100"
 $nic_type = "82545EM"
+$rancher_server_node_count = 1
 
 #Node variables
 $number_of_nodes = 3
@@ -31,28 +32,31 @@ Vagrant.configure(2) do |config|
     cache.vm.guest = :ubuntu
     cache.vm.network :private_network, ip: $cache_ip, nic_type: $nic_type
     cache.vm.provider :virtualbox do |v|
-      v.customize ["modifyvm", :id, "--memory", 512]
+      v.customize ["modifyvm", :id, "--memory", 1024]
       v.customize ["modifyvm", :id, "--name", "cache"]
     end
     cache.vm.provision "shell", path: "scripts/cache.sh"
   end
 
   # Rancher Server
-  config.vm.define "server" do |server|
-    server.vm.box= "MatthewHartstonge/RancherOS"
-    server.vm.box_url = "MatthewHartstonge/RancherOS"
-    server.vm.guest = :linux
-    server.vm.hostname = 'server'
-    server.vm.network :private_network, ip: $rancher_server_ip,
-      nic_type: $nic_type
-    server.vm.provider :virtualbox do |v|
-      v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
-      v.customize ["modifyvm", :id, "--memory", 2048]
-      v.customize ["modifyvm", :id, "--name", "server"]
-    end
-    server.vm.provision "shell", path: "scripts/configure_rancher_server.sh", args: [$rancher_server_ip, $orchestrator]
-    server.vm.provision "shell", path: "scripts/install_nfs.sh"
-  end
+   (1..$rancher_server_node_count).each do |i|
+     hostname = "server-%02d" % i
+     config.vm.define hostname do |server|
+       server.vm.box= "MatthewHartstonge/RancherOS"
+       server.vm.box_url = "MatthewHartstonge/RancherOS"
+       server.vm.guest = :linux
+       server.vm.provider :virtualbox do |v|
+         v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+         v.customize ["modifyvm", :id, "--memory", 2048]
+         v.customize ["modifyvm", :id, "--name", hostname]
+       end
+
+       ip = "172.22.101.#{i+100}"
+       server.vm.network :private_network, ip: ip,nic_type: $nic_type
+       server.vm.hostname = hostname
+       server.vm.provision "shell", path: "scripts/configure_rancher_server.sh", args: [$rancher_server_ip, $orchestrator, i]
+     end
+   end
 
   # Rancher Nodes
   (1..$number_of_nodes).each do |i|
@@ -67,7 +71,7 @@ Vagrant.configure(2) do |config|
         vb.customize ["modifyvm", :id, "--name", hostname]
       end
 
-      ip = "172.22.101.#{i+101}"
+      ip = "172.22.101.#{i+110}"
       node.vm.network "private_network", ip: ip, nic_type: $nic_type
       node.vm.hostname = hostname
       node.vm.provision "shell", path: "scripts/configure_rancher_node.sh", args: [$rancher_server_ip, $orchestrator]

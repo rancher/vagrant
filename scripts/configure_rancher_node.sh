@@ -23,7 +23,7 @@ while true; do
     --rm \
     appropriate/curl \
       -s \
-      "http://$rancher_server_ip:8080/v2-beta/project?name=$orchestrator" | jq '.data[0].id' | tr -d '"')
+      "http://$rancher_server_ip/v2-beta/project?name=$orchestrator" | jq '.data[0].id' | tr -d '"')
 
   if [[ "$ENV_ID" == 1a* ]]; then
     break
@@ -44,14 +44,14 @@ docker run \
     -H 'Content-Type: application/json' \
     -H 'accept: application/json' \
     -d "{\"type\":\"registrationToken\"}" \
-      "http://$rancher_server_ip:8080/v2-beta/projects/$ENV_ID/registrationtoken"
+      "http://$rancher_server_ip/v2-beta/projects/$ENV_ID/registrationtoken"
 
 docker run \
   -v /tmp:/tmp \
   --rm \
   appropriate/curl \
     -s \
-    "http://$rancher_server_ip:8080/v2-beta/projects/$ENV_ID/registrationtokens/?state=active" |
+    "http://$rancher_server_ip/v2-beta/projects/$ENV_ID/registrationtokens/?state=active" |
       grep -Eo '[^,]*' |
       grep -E 'command' |
       awk '{gsub("\"command\":\"", ""); gsub("\"", ""); print}' |

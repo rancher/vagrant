@@ -2,7 +2,8 @@
 
 rancher_server_ip=${1:-172.22.101.100}
 orchestrator=${2:-cattle}
-cache_ip=172.22.101.101
+node=${3}
+cache_ip=172.22.101.100
 rancher_server_version=stable
 
 if [ ! "$(ps -ef | grep dockerd | grep -v grep | grep "$cache_ip")" ]; then
@@ -12,27 +13,45 @@ if [ ! "$(ps -ef | grep dockerd | grep -v grep | grep "$cache_ip")" ]; then
   sleep 5
 fi
 
+SUSPEND=n
+CATTLE_JAVA_OPTS="-Xms128m -Xmx1g -XX:+HeapDumpOnOutOfMemoryError -agentlib:jdwp=transport=dt_socket,server=y,suspend=$SUSPEND,address=1044"
+
 echo Installing Rancher Server
-sudo docker run -d --restart=always -p 8080:8080 rancher/server:$rancher_server_version
+sudo docker run -d --restart=always \
+ -p 8080:8080 \
+ -p 8088:8088 \
+ -p 1044:1044 \
+ -p 9345:9345 \
+ -e CATTLE_JAVA_OPTS="$CATTLE_JAVA_OPTS" \
+ --restart=unless-stopped \
+ --name rancher-server \
+ rancher/server:$rancher_server_version \
+ --db-host $cache_ip \
+ --db-port 3306 \
+ --db-name cattle \
+ --db-user root \
+ --db-pass cattle \
+ --advertise-address `ifconfig eth1 | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1}'`
 
-# wait until rancher server is ready
-while true; do
-  wget -T 5 -c http://$rancher_server_ip:8080 && break
-  sleep 5
-done
+if [ $node -eq 1 ]; then
+  # wait until rancher server is ready
+  while true; do
+    wget -T 5 -c http://$rancher_server_ip && break
+    sleep 5
+  done
 
-set -e
+  set -e
 
-# disable telemetry for developers
-docker run \
-  --rm \
-  appropriate/curl \
-    -s \
-    -X POST \
-    -H 'Accept: application/json' \
-    -H 'Content-Type: application/json' \
-    -d '{"type":"setting","name":"telemetry.opt","value":"out"}' \
-      "http://$rancher_server_ip:8080/v2-beta/setting"
+  # disable telemetry for developers
+ docker run \
+    --rm \
+    appropriate/curl \
+      -s \
+      -X POST \
+      -H 'Accept: application/json' \
+      -H 'Content-Type: application/json' \
+      -d '{"type":"setting","name":"telemetry.opt","value":"out"}' \
+        "http://$rancher_server_ip/v2-beta/setting"
 
 
 # lookup orchestrator template id
@@ -42,7 +61,7 @@ while true; do
     --rm \
     appropriate/curl \
       -s \
-        "http://$rancher_server_ip:8080/v2-beta/projectTemplates?name=$orchestrator" | jq '.data[0].id' | tr -d '"')
+        "http://$rancher_server_ip/v2-beta/projectTemplates?name=$orchestrator" | jq '.data[0].id' | tr -d '"')
 
   # might've received 422 InvalidReference if the templates haven't populated yet
   if [[ "$ENV_TEMPLATE_ID" == 1pt* ]]; then
@@ -62,10 +81,10 @@ docker run \
     -H 'Accept: application/json' \
     -H 'Content-Type: application/json' \
     -d "{\"description\":\"$orchestrator\",\"name\":\"$orchestrator\",\"projectTemplateId\":\"$ENV_TEMPLATE_ID\",\"allowSystemRole\":false,\"members\":[],\"virtualMachine\":false,\"servicesPortRange\":null}" \
-      "http://$rancher_server_ip:8080/v2-beta/projects"
+      "http://$rancher_server_ip/v2-beta/projects"
 
 # lookup default environment id
-DEFAULT_ENV_ID=$(docker run -v /tmp:/tmp --rm appropriate/curl -s "http://$rancher_server_ip:8080/v2-beta/project?name=Default" | jq '.data[0].id' | tr -d '"')
+DEFAULT_ENV_ID=$(docker run -v /tmp:/tmp --rm appropriate/curl -s "http://$rancher_server_ip/v2-beta/project?name=Default" | jq '.data[0].id' | tr -d '"')
 
 # delete default environment
 docker run \
@@ -76,4 +95,5 @@ docker run \
     -H 'Accept: application/json' \
     -H 'Content-Type: application/json' \
     -d '{}' \
-      "http://$rancher_server_ip:8080/v2-beta/projects/$DEFAULT_ENV_ID/?action=delete"
+      "http://$rancher_server_ip/v2-beta/projects/$DEFAULT_ENV_ID/?action=delete"
+fi
