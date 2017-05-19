@@ -4,7 +4,7 @@ rancher_server_ip=${1:-172.22.101.100}
 orchestrator=${2:-cattle}
 node=${3}
 cache_ip=172.22.101.100
-rancher_server_version=stable
+rancher_server_version=${3:-stable}
 
 if [ ! "$(ps -ef | grep dockerd | grep -v grep | grep "$cache_ip")" ]; then
   ros config set rancher.docker.registry_mirror "http://$cache_ip:5000"
