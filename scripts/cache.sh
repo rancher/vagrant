@@ -3,7 +3,7 @@
 cache_ip=${1:-172.22.101.100}
 password=${2:-rancher}
 
-echo "DOCKER_OPTS=\"\$DOCKER_OPTS --registry-mirror http://172.22.101.101:5000\"" >> /etc/default/docker
+echo "DOCKER_OPTS=\"\$DOCKER_OPTS --registry-mirror http://$cache_ip:5000\"" >> /etc/default/docker
 service docker restart
 
 # path to a remote share
