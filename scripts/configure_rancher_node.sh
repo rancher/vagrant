@@ -7,6 +7,7 @@ cache_ip=172.22.101.100
 if [ ! "$(ps -ef | grep dockerd | grep -v grep | grep "$cache_ip")" ]; then
   ros config set rancher.docker.registry_mirror "http://$cache_ip:5000"
   ros config set rancher.system_docker.registry_mirror "http://$cache_ip:5000"
+  ros config set rancher.docker.host "['unix:///var/run/docker.sock', 'tcp://0.0.0.0:2375']"
   system-docker restart docker
   sleep 5
 fi
