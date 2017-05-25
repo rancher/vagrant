@@ -7,6 +7,10 @@ require 'yaml'
 x = YAML.load_file('config.yaml')
 puts "Config: #{x.inspect}\n\n"
 
+# Local Catalog Configuration
+$local_catalog_repo_dir = "/Users/joliver/Workspace/llparse"
+$catalog_json = '{"catalogs":{"community":{"url":"http://172.22.101.100:4000/community-catalog","branch":"master"},"library":{"url":"http://172.22.101.100:4000/rancher-catalog","branch":"master"}}}'
+
 $private_nic_type = x.fetch('net').fetch('private_nic_type')
 
 Vagrant.configure(2) do |config|
@@ -22,6 +26,7 @@ Vagrant.configure(2) do |config|
       v.name = "master"
     end
     master.vm.provision "shell", path: "scripts/master.sh"
+    master.vm.synced_folder $local_catalog_repo_dir, "/var/git"
   end
 
   server_ip = IPAddr.new(x.fetch('ip').fetch('server'))
@@ -39,7 +44,7 @@ Vagrant.configure(2) do |config|
       end
       server.vm.network :private_network, ip: IPAddr.new(server_ip.to_i + i - 1, Socket::AF_INET).to_s, nic_type: $private_nic_type
       server.vm.hostname = hostname
-      server.vm.provision "shell", path: "scripts/configure_rancher_server.sh", args: [x.fetch('ip').fetch('master'), x.fetch('orchestrator'), i, x.fetch('version')]
+      server.vm.provision "shell", path: "scripts/configure_rancher_server.sh", args: [x.fetch('ip').fetch('master'), x.fetch('orchestrator'), i, x.fetch('version'), $catalog_json]
     end
   end
 

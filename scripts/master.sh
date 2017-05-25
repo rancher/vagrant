@@ -133,3 +133,15 @@ docker run -d --name haproxy --restart=always -p 80:80 -p 1936:1936 -v $share_pa
 # Install nfs server
 sudo mkdir -p /home/vagrant/nfs
 sudo docker run -d --name nfs --restart=always --privileged --net=host -v /home/vagrant/nfs:/nfsshare -e SHARED_DIRECTORY=/nfsshare itsthenetwork/nfs-server-alpine:4
+
+# Install git server
+sudo docker run \
+  -d \
+  --name=git \
+  -p 4000:80 \
+  -v /var/git:/var/git \
+  -e SERVER_NAME=172.22.101.100 \
+  -e WORKER_CONNECTIONS=8 \
+  -e RANCHER_SERVICE_INDEX=0 \
+  --entrypoint=/bin/sh llparse/git-serve:0.5 \
+    -c 'confd -onetime -backend env && service fcgiwrap start && service nginx start && tail -f /var/log/nginx/error.log'
