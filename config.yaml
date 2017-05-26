@@ -1,0 +1,21 @@
+# cattle|kubernetes|swarm|mesos
+orchestrator: cattle
+# https://hub.docker.com/r/rancher/server/tags/
+version: latest
+master:
+  cpus: 1
+  memory: 1024
+server:
+  count: 3
+  cpus: 1
+  memory: 2048
+node:
+  count: 3
+  cpus: 1
+  memory: 2048
+ip:
+  master: 172.22.101.100
+  server: 172.22.101.101
+  node:   172.22.101.111
+net:
+  private_nic_type: 82545EM
