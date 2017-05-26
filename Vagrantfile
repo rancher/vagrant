@@ -1,80 +1,63 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
-
-# All Vagrant configuration is done below. The "2" in Vagrant.configure
-# configures the configuration version (we support older styles for
-# backwards compatibility). Please don't change it unless you know what
-# you're doing.
-#
 require_relative 'vagrant_rancheros_guest_plugin.rb'
+require 'ipaddr'
+require 'yaml'
 
-# Proxy Registry Cache
-$cache_ip = "172.22.101.100"
+x = YAML.load_file('config.yaml')
+puts "Config: #{x.inspect}\n\n"
 
-#Rancher variables
-$orchestrator = "cattle"
-$rancher_server_ip = "172.22.101.100"
-$rancher_server_version = "latest"
-$nic_type = "82545EM"
-$rancher_server_node_count = 1
-
-#Node variables
-$number_of_nodes = 3
-$node_mem = "2048"
-$node_cpus = "1"
-$vb_gui = false
+$private_nic_type = x.fetch('net').fetch('private_nic_type')
 
 Vagrant.configure(2) do |config|
-  
-  # Proxy Registry Cache & NFS
-  config.vm.define "cache" do |cache|
-    cache.vm.box = "williamyeh/ubuntu-trusty64-docker"
-    cache.vm.guest = :ubuntu
-    cache.vm.network :private_network, ip: $cache_ip, nic_type: $nic_type
-    cache.vm.provider :virtualbox do |v|
-      v.customize ["modifyvm", :id, "--memory", 1024]
-      v.customize ["modifyvm", :id, "--name", "cache"]
+
+  config.vm.define "master" do |master|
+    c = x.fetch('master')
+    master.vm.box = "williamyeh/ubuntu-trusty64-docker"
+    master.vm.guest = :ubuntu
+    master.vm.network :private_network, ip: x.fetch('ip').fetch('master'), nic_type: $private_nic_type    
+    master.vm.provider :virtualbox do |v|
+      v.cpus = c.fetch('cpus')
+      v.memory = c.fetch('memory')
+      v.name = "master"
     end
-    cache.vm.provision "shell", path: "scripts/cache.sh"
+    master.vm.provision "shell", path: "scripts/master.sh"
   end
 
-  # Rancher Server
-   (1..$rancher_server_node_count).each do |i|
-     hostname = "server-%02d" % i
-     config.vm.define hostname do |server|
-       server.vm.box= "MatthewHartstonge/RancherOS"
-       server.vm.box_url = "MatthewHartstonge/RancherOS"
-       server.vm.guest = :linux
-       server.vm.provider :virtualbox do |v|
-         v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
-         v.customize ["modifyvm", :id, "--memory", 2048]
-         v.customize ["modifyvm", :id, "--name", hostname]
-       end
+  server_ip = IPAddr.new(x.fetch('ip').fetch('server'))
+  (1..x.fetch('server').fetch('count')).each do |i|
+    c = x.fetch('server')
+    hostname = "server-%02d" % i
+    config.vm.define hostname do |server|
+      server.vm.box= "MatthewHartstonge/RancherOS"
+      server.vm.guest = :linux
+      server.vm.provider :virtualbox do |v|
+        v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+        v.cpus = c.fetch('cpus')
+        v.memory = c.fetch('memory')
+        v.name = hostname
+      end
+      server.vm.network :private_network, ip: IPAddr.new(server_ip.to_i + i - 1, Socket::AF_INET).to_s, nic_type: $private_nic_type
+      server.vm.hostname = hostname
+      server.vm.provision "shell", path: "scripts/configure_rancher_server.sh", args: [x.fetch('ip').fetch('master'), x.fetch('orchestrator'), i, x.fetch('version')]
+    end
+  end
 
-       ip = "172.22.101.#{i+100}"
-       server.vm.network :private_network, ip: ip,nic_type: $nic_type
-       server.vm.hostname = hostname
-       server.vm.provision "shell", path: "scripts/configure_rancher_server.sh", args: [$rancher_server_ip, $orchestrator, i, $rancher_server_version]
-     end
-   end
-
-  # Rancher Nodes
-  (1..$number_of_nodes).each do |i|
+  node_ip = IPAddr.new(x.fetch('ip').fetch('node'))
+  (1..x.fetch('node').fetch('count')).each do |i|
+    c = x.fetch('node')
     hostname = "node-%02d" % i
     config.vm.define hostname do |node|
       node.vm.box   = "MatthewHartstonge/RancherOS"
       node.vm.guest = :linux
-      node.vm.provider "virtualbox" do |vb|
-        vb.memory = $node_mem
-        vb.cpus = $node_cpus
-        vb.gui = $vb_gui
-        vb.customize ["modifyvm", :id, "--name", hostname]
+      node.vm.provider "virtualbox" do |v|
+        v.cpus = c.fetch('cpus')
+        v.memory = c.fetch('memory')
+        v.name = hostname
       end
-
-      ip = "172.22.101.#{i+110}"
-      node.vm.network "private_network", ip: ip, nic_type: $nic_type
+      node.vm.network :private_network, ip: IPAddr.new(node_ip.to_i + i - 1, Socket::AF_INET).to_s, nic_type: $private_nic_type
       node.vm.hostname = hostname
-      node.vm.provision "shell", path: "scripts/configure_rancher_node.sh", args: [$rancher_server_ip, $orchestrator]
+      node.vm.provision "shell", path: "scripts/configure_rancher_node.sh", args: [x.fetch('ip').fetch('master'), x.fetch('orchestrator')]
     end
   end
 
