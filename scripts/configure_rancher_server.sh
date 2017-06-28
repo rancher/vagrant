@@ -5,6 +5,7 @@ orchestrator=${2:-cattle}
 node=${3}
 cache_ip=172.22.101.100
 rancher_server_version=${4:-stable}
+catalog_json=$5
 
 if [ ! "$(ps -ef | grep dockerd | grep -v grep | grep "$cache_ip")" ]; then
   ros config set rancher.docker.registry_mirror "http://$cache_ip:5000"
@@ -17,6 +18,10 @@ fi
 SUSPEND=n
 CATTLE_JAVA_OPTS="-Xms128m -Xmx1g -XX:+HeapDumpOnOutOfMemoryError -agentlib:jdwp=transport=dt_socket,server=y,suspend=$SUSPEND,address=1044"
 
+if [ ! -z "$catalog_json" ]; then
+  CATALOG_ENV="-e DEFAULT_CATTLE_CATALOG_URL=$catalog_json"
+fi
+
 echo Installing Rancher Server
 sudo docker run -d --restart=always \
  -p 8080:8080 \
@@ -24,6 +29,7 @@ sudo docker run -d --restart=always \
  -p 1044:1044 \
  -p 9345:9345 \
  -e CATTLE_JAVA_OPTS="$CATTLE_JAVA_OPTS" \
+ $CATALOG_ENV \
  --restart=unless-stopped \
  --name rancher-server \
  rancher/server:$rancher_server_version \
