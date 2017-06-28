@@ -26,7 +26,9 @@ Vagrant.configure(2) do |config|
       v.name = "master"
     end
     master.vm.provision "shell", path: "scripts/master.sh"
-    master.vm.synced_folder $local_catalog_repo_dir, "/var/git"
+    if x.fetch('catalog').fetch('enabled') == "true"
+      master.vm.synced_folder x.fetch('catalog').fetch('host_repo_dirs'), "/var/git"
+    end
   end
 
   server_ip = IPAddr.new(x.fetch('ip').fetch('server'))
@@ -44,7 +46,7 @@ Vagrant.configure(2) do |config|
       end
       server.vm.network :private_network, ip: IPAddr.new(server_ip.to_i + i - 1, Socket::AF_INET).to_s, nic_type: $private_nic_type
       server.vm.hostname = hostname
-      server.vm.provision "shell", path: "scripts/configure_rancher_server.sh", args: [x.fetch('ip').fetch('master'), x.fetch('orchestrator'), i, x.fetch('version'), $catalog_json]
+      server.vm.provision "shell", path: "scripts/configure_rancher_server.sh", args: [x.fetch('ip').fetch('master'), x.fetch('orchestrator'), i, x.fetch('version'), x.fetch('catalog').fetch('json')]
     end
   end
 

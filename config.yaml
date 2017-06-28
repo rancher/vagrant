@@ -19,3 +19,17 @@ ip:
   node:   172.22.101.111
 net:
   private_nic_type: 82545EM
+# Run a git server for local catalog service consumption
+catalog:
+  enabled: true
+  host_repo_dirs: /Users/joliver/Workspace/llparse
+  json: '{"catalogs":{"community":{"url":"http://172.22.101.100:4000/community-catalog","branch":"master"},"library":{"url":"http://172.22.101.100:4000/rancher-catalog","branch":"master"}}}'
+  # TODO: transform yaml into json
+  #
+  # catalogs:
+  #   library:
+  #     url: http://172.22.101.100:4000/rancher-catalog
+  #     branch: master
+  #   community:
+  #     url: http://172.22.101.100:4000/community-catalog
+  #     branch: master
