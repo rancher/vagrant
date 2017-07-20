@@ -1,9 +1,9 @@
 #!/bin/bash -x
+isolated=${1:-true}
+cache_ip=${2:-172.22.101.100}
+password=${3:-rancher}
 
-cache_ip=${1:-172.22.101.100}
-password=${2:-rancher}
-
-echo "DOCKER_OPTS=\"\$DOCKER_OPTS --registry-mirror http://$cache_ip:5000\"" >> /etc/default/docker
+echo "DOCKER_OPTS=\"\$DOCKER_OPTS --registry-mirror http://$cache_ip:4000 --insecure-registry http://$cache_ip:5000\"" >> /etc/default/docker
 service docker restart
 
 # path to a remote share
@@ -48,9 +48,9 @@ mkdir -p $share_path/redis
 echo "save 300 1
 requirepass \"$password\"" > $share_path/redis/redis.conf
 
-docker run -d --name redis-mirror -p 6379 -v $share_path/redis:/data --entrypoint=/usr/local/bin/redis-server redis /data/redis.conf
+docker run -d --restart=always --name redis-mirror -p 6379 -v $share_path/redis:/data --entrypoint=/usr/local/bin/redis-server redis /data/redis.conf
 
-docker run -d --restart=always -p 5000:5000 --name v2-mirror \
+docker run -d --restart=always -p 4000:5000 --name v2-mirror \
   -v $share_path:/var/lib/registry --link redis-mirror:redis registry:2 /var/lib/registry/config.yml
 
 # Allow for --provison to clean the cattle DB
@@ -133,3 +133,12 @@ docker run -d --name haproxy --restart=always -p 80:80 -p 1936:1936 -v $share_pa
 # Install nfs server
 sudo mkdir -p /home/vagrant/nfs
 sudo docker run -d --name nfs --restart=always --privileged --net=host -v /home/vagrant/nfs:/nfsshare -e SHARED_DIRECTORY=/nfsshare itsthenetwork/nfs-server-alpine:4
+
+#Run a local registry
+mkdir -p $share_path/registry
+docker run -d -p 5000:5000 --restart=always --name registry  -v  $share_path/registry:/var/lib/registry  registry:2
+
+#Run local proxy
+if [ "$isolated" = 'true' ]; then
+    docker run -d --restart=always --name proxy -p 3128:3128 minimum2scp/squid
+fi

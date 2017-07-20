@@ -1,3 +1,4 @@
 .vagrant
 registry
 vagrantup.bat
+/vault

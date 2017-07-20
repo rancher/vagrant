@@ -5,13 +5,21 @@ orchestrator=${2:-cattle}
 node=${3}
 cache_ip=172.22.101.100
 rancher_server_version=${4:-stable}
+isolated=${5:-false}
 
 if [ ! "$(ps -ef | grep dockerd | grep -v grep | grep "$cache_ip")" ]; then
-  ros config set rancher.docker.registry_mirror "http://$cache_ip:5000"
-  ros config set rancher.system_docker.registry_mirror "http://$cache_ip:5000"
+  ros config set rancher.docker.registry_mirror "http://$cache_ip:4000"
+  ros config set rancher.system_docker.registry_mirror "http://$cache_ip:4000"
   ros config set rancher.docker.host "['unix:///var/run/docker.sock', 'tcp://0.0.0.0:2375']"
+  if [ "$isolated" = 'true' ]; then
+    ros config set rancher.docker.environment "['http_proxy=http://172.22.101.100:3128','https_proxy=http://172.22.101.100:3128','HTTP_PROXY=http://172.22.101.100:3128','HTTPS_PROXY=http://172.22.101.100:3128'],'no_proxy=localhost,127.0.0.1','NO_PROXY=localhost,127.0.0.1'"
+  fi  
   system-docker restart docker
   sleep 5
+fi
+
+if [ "$isolated" = 'true' ]; then
+  route add default gw 172.22.101.100
 fi
 
 SUSPEND=n
