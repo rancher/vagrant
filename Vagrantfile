@@ -21,7 +21,6 @@ Vagrant.configure(2) do |config|
       v.memory = c.fetch('memory')
       v.name = "master"
     end
-    master.vm.synced_folder "c:/", "/c"
     master.vm.provision "shell", path: "scripts/master.sh", args: [x.fetch('isolated')]
   end
 
