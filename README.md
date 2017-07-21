@@ -1,5 +1,5 @@
 # localranchervagrant
-![Pretty Picture](https://github.com/chrisurwin/localranchervagrant/localranchervagrant.png)
+![Pretty Picture](https://github.com/chrisurwin/localranchervagrant/blob/master/localranchervagrant.PNG)
 
 Vagrant files to stand up a Local Rancher install with 3 nodes
 
