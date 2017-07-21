@@ -1,4 +1,5 @@
 # localranchervagrant
+[[https://github.com/chrisurwin/localranchervagrant/localranchervagrant.png|alt=Pretty Picture]]
 Vagrant files to stand up a Local Rancher install with 3 nodes
 
 This runs RancherOS as the base OS for the nodes which doesn't have the guest tools for Virtualbox installed
