@@ -141,4 +141,25 @@ docker run -d -p 5000:5000 --restart=always --name registry  -v  $share_path/reg
 #Run local proxy
 if [ "$isolated" = 'true' ]; then
     docker run -d --restart=always --name proxy -p 3128:3128 minimum2scp/squid
+
+#Setup dns proxy
+echo    "
+acl goodclients {
+        172.22.101.0/24;
+        localhost;
+        localnets;
+};
+
+options {
+
+        recursion yes;
+        allow-query { goodclients; };
+
+        dnssec-validation auto;
+
+        auth-nxdomain no;    # conform to RFC1035
+        listen-on-v6 { any; };
+};" > /root/bind.conf
+
+    docker run -d --name bind9 -p 53:53 -p 53:53/udp -v /root/bind.conf:/etc/bind/named.conf resystit/bind9:latest
 fi

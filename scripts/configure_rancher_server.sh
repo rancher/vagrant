@@ -19,6 +19,8 @@ if [ ! "$(ps -ef | grep dockerd | grep -v grep | grep "$cache_ip")" ]; then
 fi
 
 if [ "$isolated" = 'true' ]; then
+  ros config set rancher.network.dns.nameservers ['172.22.101.100']
+  system-docker restart network
   route add default gw 172.22.101.100
 fi
 
