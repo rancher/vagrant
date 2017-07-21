@@ -1,9 +1,9 @@
 # cattle|kubernetes|swarm|mesos
 orchestrator: cattle
 # 'true'|'false' isolated network requiring proxy. must be in ''
-isolated: 'false' 
+isolated: 'true' 
 # https://hub.docker.com/r/rancher/server/tags/
-version: latest
+version: v1.6.5-rc2
 master:
   cpus: 1
   memory: 1024
