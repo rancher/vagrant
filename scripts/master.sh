@@ -141,8 +141,4 @@ docker run -d -p 5000:5000 --restart=always --name registry  -v  $share_path/reg
 #Run local proxy
 if [ "$isolated" = 'true' ]; then
     docker run -d --restart=always --name proxy -p 3128:3128 minimum2scp/squid
-    apt-get install dnsproxy
-    sed -i -e 's/192.168.168.1/172.22.101.100/g' /etc/dnsproxy.conf
-    sed -i -e 's/53000/53/g' /etc/dnsproxy.conf 
-    dnsproxy -d
 fi

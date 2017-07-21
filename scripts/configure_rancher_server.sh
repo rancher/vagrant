@@ -8,7 +8,6 @@ rancher_server_version=${4:-stable}
 isolated=${5:-false}
 
 if [ ! "$(ps -ef | grep dockerd | grep -v grep | grep "$cache_ip")" ]; then
-  ros config set rancher.network.dns.nameservers ['172.22.101.100']
   ros config set rancher.docker.registry_mirror "http://$cache_ip:4000"
   ros config set rancher.system_docker.registry_mirror "http://$cache_ip:4000"
   ros config set rancher.docker.host "['unix:///var/run/docker.sock', 'tcp://0.0.0.0:2375']"
