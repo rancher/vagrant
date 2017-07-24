@@ -29,7 +29,7 @@ Vagrant.configure(2) do |config|
     c = x.fetch('server')
     hostname = "server-%02d" % i
     config.vm.define hostname do |server|
-      server.vm.box= "MatthewHartstonge/RancherOS"
+      server.vm.box= "chrisurwin/RancherOS"
       server.vm.guest = :linux
       server.vm.provider :virtualbox do |v|
         v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
@@ -48,7 +48,7 @@ Vagrant.configure(2) do |config|
     c = x.fetch('node')
     hostname = "node-%02d" % i
     config.vm.define hostname do |node|
-      node.vm.box   = "MatthewHartstonge/RancherOS"
+      node.vm.box   = "chrisurwin/RancherOS"
       node.vm.guest = :linux
       node.vm.provider "virtualbox" do |v|
         v.cpus = c.fetch('cpus')
