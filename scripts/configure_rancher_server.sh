@@ -11,14 +11,14 @@ if [ ! "$(ps -ef | grep dockerd | grep -v grep | grep "$cache_ip")" ]; then
   ros config set rancher.docker.registry_mirror "http://$cache_ip:4000"
   ros config set rancher.system_docker.registry_mirror "http://$cache_ip:4000"
   ros config set rancher.docker.host "['unix:///var/run/docker.sock', 'tcp://0.0.0.0:2375']"
-  if [ "$isolated" = 'true' ]; then
+  if [ "$isolated" == 'true' ]; then
     ros config set rancher.docker.environment "['http_proxy=http://172.22.101.100:3128','https_proxy=http://172.22.101.100:3128','HTTP_PROXY=http://172.22.101.100:3128','HTTPS_PROXY=http://172.22.101.100:3128'],'no_proxy=localhost,127.0.0.1','NO_PROXY=localhost,127.0.0.1'"
   fi  
   system-docker restart docker
   sleep 5
 fi
 
-if [ "$isolated" = 'true' ]; then
+if [ "$isolated" == 'true' ]; then
   ros config set rancher.network.dns.nameservers ['172.22.101.100']
   system-docker restart network
   route add default gw 172.22.101.100
@@ -27,18 +27,23 @@ fi
 SUSPEND=n
 CATTLE_JAVA_OPTS="-Xms128m -Xmx1g -XX:+HeapDumpOnOutOfMemoryError -agentlib:jdwp=transport=dt_socket,server=y,suspend=$SUSPEND,address=1044"
 
+EXTRA_OPTS=""
+if [ "$isolated" == 'true' ]; then
+  EXTRA_OPTS="-e http_proxy='http://172.22.101.100:3128' \
+ -e https_proxy='http://172.22.101.100:3128' \
+ -e HTTP_PROXY='http://172.22.101.100:3128' \
+ -e HTTPS_PROXY='http://172.22.101.100:3128' \
+ -e no_proxy='localhost,127.0.0.1' \
+ -e NO_PROXY='localhost,127.0.0.1'"
+fi
+
 echo Installing Rancher Server
 sudo docker run -d --restart=always \
  -p 8080:8080 \
  -p 8088:8088 \
  -p 1044:1044 \
  -p 9345:9345 \
- -e http_proxy='http://172.22.101.100:3128' \
- -e https_proxy='http://172.22.101.100:3128' \
- -e HTTP_PROXY='http://172.22.101.100:3128' \
- -e HTTPS_PROXY='http://172.22.101.100:3128' \
- -e no_proxy='localhost,127.0.0.1' \
- -e NO_PROXY='localhost,127.0.0.1' \
+ $EXTRA_OPTS \
  -e CATTLE_JAVA_OPTS="$CATTLE_JAVA_OPTS" \
  --restart=unless-stopped \
  --name rancher-server \
