@@ -13,6 +13,7 @@ if [ ! "$(ps -ef | grep dockerd | grep -v grep | grep "$cache_ip")" ]; then
   ros config set rancher.docker.insecure_registry "['http://$cache_ip']"
   if [ "$isolated" == 'true' ]; then
     ros config set rancher.docker.environment "['http_proxy=http://172.22.101.100:3128','https_proxy=http://172.22.101.100:3128','HTTP_PROXY=http://172.22.101.100:3128','HTTPS_PROXY=http://172.22.101.100:3128','no_proxy=localhost,127.0.0.1','NO_PROXY=localhost,127.0.0.1']"
+    ros config set rancher.system_docker.environment "['http_proxy=http://172.22.101.100:3128','https_proxy=http://172.22.101.100:3128','HTTP_PROXY=http://172.22.101.100:3128','HTTPS_PROXY=http://172.22.101.100:3128','no_proxy=localhost,127.0.0.1','NO_PROXY=localhost,127.0.0.1']"
   fi
   system-docker restart docker
   sleep 5
