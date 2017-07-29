@@ -2,6 +2,9 @@
 orchestrator: cattle
 # 'true'|'false' isolated network requiring proxy. must be in ''
 isolated: 'false' 
+# 'true'|'false'
+sslenabled: 'true'
+ssldns: 'server.rancher.vagrant'
 # https://hub.docker.com/r/rancher/server/tags/
 version: latest
 master:
