@@ -122,7 +122,7 @@ docker run \
       "$protocol://$rancher_server_ip/v2-beta/projects"
 
 # lookup default environment id
-DEFAULT_ENV_ID=$(docker run -v /tmp:/tmp --rm appropriate/curl -sLk "https://$rancher_server_ip/v2-beta/project?name=Default" | jq '.data[0].id' | tr -d '"')
+DEFAULT_ENV_ID=$(docker run -v /tmp:/tmp --rm appropriate/curl -sLk "$protocol://$rancher_server_ip/v2-beta/project?name=Default" | jq '.data[0].id' | tr -d '"')
 
 # delete default environment
 docker run \
