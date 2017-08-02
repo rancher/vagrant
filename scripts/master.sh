@@ -14,6 +14,39 @@ service docker restart
 share_path=/vagrant/.vagrant/data
 mkdir -p $share_path
 
+#add keys to vagrant
+echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCSR3TwJgGpIFFHLbtep+bUP1GopjFVgDlu1vN/PIeI2WpiQPlPuINwjWlJInGXx0HZKF/CfSk31X8NZQ5xzhAkDF75jBWCzN9uYHLiCCzNzRLyU1RBIKdnuKPUA7BTTgBN1WYqi56En0GLif8PkjKUR5FfKelzmZjNi7WC6iPCqOKyGa1J4zGPTmQrEZAmJXKcZV/Iyp457pcIIIQNhu9XETY71C4CDE87j3jj/TrCgAZM2kRN+67fJTy8ptLydsTM9OtbXjm/4jb7BDhUNN2HItC1A3rQCdRqC5JxcKQ7Yj5SaAEz37VLXEZkHPLDAg9lkxp4mybb/zLkWIjk/x6J vagrant" >> /home/vagrant/.ssh/authorized_keys
+echo "-----BEGIN RSA PRIVATE KEY-----
+MIIEowIBAAKCAQEAkkd08CYBqSBRRy27Xqfm1D9RqKYxVYA5btbzfzyHiNlqYkD5
+T7iDcI1pSSJxl8dB2Shfwn0pN9V/DWUOcc4QJAxe+YwVgszfbmBy4ggszc0S8lNU
+QSCnZ7ij1AOwU04ATdVmKouehJ9Bi4n/D5IylEeRXynpc5mYzYu1guojwqjishmt
+SeMxj05kKxGQJiVynGVfyMqeOe6XCCCEDYbvVxE2O9QuAgxPO4944/06woAGTNpE
+Tfuu3yU8vKbS8nbEzPTrW145v+I2+wQ4VDTdhyLQtQN60AnUaguScXCkO2I+UmgB
+M9+1S1xGZBzywwIPZZMaeJsm2/8y5FiI5P8eiQIDAQABAoIBACRi3fW2nochYNZh
+y8/Z2BNHxNo8rNzlzmOB2IP33Ibv/gR+wQVRknB23I+yn6rvh7Oq1VcdpxkaZEZC
+svsgFOfCpAVTES6+I33jQ/BxtCNlNadNjxG8O6gTR70/RacTKgQyZv2CSWYX70f0
+hZur9CTqQID5ffahaF8It5ffAhIzbBpC1Ezc1yBiWrsR16j7McucVkHtRDIIM+XR
+vVmxultCwlISSocvCttFcmcJHYDo3aAHGctzBshQHR6gpG2WWKkDPz9I+hCcOCSp
++KN1emrb/9GTojfgmqn2cl+dRbiWUtBeeY/xy0TzytTgu3Ox+UqYrAHUZtyP4WZY
+1YMVLWECgYEAwrg24KT2RVx/58yDSswSXdXCtTCJHJMrxpcnYhhS0XltZr7kW1Vk
+oE2hWvDXqJuMB+sdJoU8YIX4v2OKOmRYyhocEe6ELHcNa4XtJwX/mPj3C3lQMGeN
+OEGhchT1RDbCGNUzyeNWmfYV+dl+PMNY1qvOoUHM3Fg3TGRuB7VJ3ZUCgYEAwFCW
+KDN2/SOdGKERMi43eErroJpmKB7bF9RZ6UbYaCjfvfMk1DCylLsbycVc1s7RmCs0
+V0AtCgREHePXS4qGR1ecUtZIPQ+ydHISvo53IW/TORHPz8VQQSmPJnQK+qtVkFNR
+ZPlb/Kr/4zD1k/pcusYcb4Ba4+RwxwauPIgTuCUCgYEAwLkVT7jWKwaHbgSEOibL
+UuZ8hVsZihe77x2yFCwg5EV724K6gA9/vg2300unF7GEol25h2O9w4c2ES/TI0Io
+gzfean0Zguz+clqmw8XzGhPoaAnVLWOAaZrD0ScfLjnIWE3EqWCCWXYwgA8dG8T5
+C9gWdpKq0bfaW5jXMnfjORUCgYBXpKI54fJpPNC8R7MZhlx7MtGdWKATyrQYcQsk
+t8ep+G63F1cCaMsJ4xev5YUA1DJKwe3RkYq1FOqiIJKed5voaXHxgnxbb4rpbI9E
+TpLWJytAx/BIBOklOTZm1N2oDWsqIf5nIQkd5iRFuqtAbAnUiLKu0fUaBKKs4UuI
+hI9QDQKBgCXeVvAjb0Ys55tO2FYHcH5PuC3sGraNZjLVZPF21RsKvzCWF0tExJJk
+sArpXUg9FqvqOfWLsUmny/W0p7T86anq0HA+tMoBtEF6GnXeCDuEHjN9CwM9uQp1
+IzlmmV8pDc/Uddf7lFuOLEQh3CIbuZZRvycQlAJyVIx5RTahxe7C
+-----END RSA PRIVATE KEY-----" > /home/vagrant/.ssh/rancher_id
+
+chmod 0700 /home/vagrant/.ssh/rancher_id
+chown vagrant /home/vagrant/.ssh/rancher_id
+
 docker rm -f cadvisor
 
 echo "version: 0.1
@@ -54,7 +87,7 @@ requirepass \"$password\"" > $share_path/redis/redis.conf
 
 docker run -d --restart=always --name redis-mirror -p 6379 -v $share_path/redis:/data --entrypoint=/usr/local/bin/redis-server redis /data/redis.conf
 
-docker run -d --restart=always -p 5000:5000 --name v2-mirror \
+docker run -d --restart=always -p 4000:5000 --name v2-mirror \
   -v $share_path:/var/lib/registry --link redis-mirror:redis registry:2 /var/lib/registry/config.yml
 
 # Allow for --provison to clean the cattle DB

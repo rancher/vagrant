@@ -1,7 +1,7 @@
 # cattle|kubernetes|swarm|mesos
 orchestrator: cattle
 # 'true'|'false' isolated network requiring proxy. must be in ''
-isolated: 'false' 
+isolated: 'true' 
 # 'true'|'false'
 sslenabled: 'false'
 ssldns: 'server.rancher.vagrant'
@@ -30,3 +30,4 @@ ip:
 linked_clones: true
 net:
   private_nic_type: 82545EM
+  external_ssh: true
