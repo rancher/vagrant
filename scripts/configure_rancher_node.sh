@@ -13,6 +13,9 @@ else
   protocol="http"
 fi
 
+#add keys to vagrant
+echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCSR3TwJgGpIFFHLbtep+bUP1GopjFVgDlu1vN/PIeI2WpiQPlPuINwjWlJInGXx0HZKF/CfSk31X8NZQ5xzhAkDF75jBWCzN9uYHLiCCzNzRLyU1RBIKdnuKPUA7BTTgBN1WYqi56En0GLif8PkjKUR5FfKelzmZjNi7WC6iPCqOKyGa1J4zGPTmQrEZAmJXKcZV/Iyp457pcIIIQNhu9XETY71C4CDE87j3jj/TrCgAZM2kRN+67fJTy8ptLydsTM9OtbXjm/4jb7BDhUNN2HItC1A3rQCdRqC5JxcKQ7Yj5SaAEz37VLXEZkHPLDAg9lkxp4mybb/zLkWIjk/x6J vagrant" >> /home/rancher/.ssh/authorized_keys
+
 if [ ! "$(ps -ef | grep dockerd | grep -v grep | grep "$cache_ip")" ]; then
   ros config set rancher.docker.registry_mirror "http://$cache_ip:4000"
   ros config set rancher.system_docker.registry_mirror "http://$cache_ip:4000"

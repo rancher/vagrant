@@ -8,6 +8,7 @@ x = YAML.load_file('config.yaml')
 puts "Config: #{x.inspect}\n\n"
 
 $private_nic_type = x.fetch('net').fetch('private_nic_type')
+$external_ssh = x.fetch('net').fetch('external_ssh')
 
 Vagrant.configure(2) do |config|
 
@@ -21,6 +22,7 @@ Vagrant.configure(2) do |config|
       v.memory = c.fetch('memory')
       v.name = "master"
     end
+      master.vm.network "forwarded_port", guest: 22, host: 2277
     master.vm.provision "shell", path: "scripts/master.sh", args: [x.fetch('isolated'),x.fetch('sslenabled')]
   end
 
