@@ -30,7 +30,7 @@ ip:
 linked_clones: true
 net:
   private_nic_type: 82545EM
-  external_ssh: true
+  external_ssh: false
 # Location of ssh key files that want to be added to the servers
 keys:
   public_key: ""

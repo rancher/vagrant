@@ -22,7 +22,9 @@ Vagrant.configure(2) do |config|
       v.memory = c.fetch('memory')
       v.name = "master"
     end
+    if x.fetch('net').fetch('external_ssh')
       master.vm.network "forwarded_port", guest: 22, host: 2277
+    end
     master.vm.provision "shell", path: "scripts/master.sh", args: [x.fetch('isolated'),x.fetch('sslenabled')]
     if File.file?(x.fetch('keys').fetch('private_key'))
        config.vm.provision "file", source: x.fetch('keys').fetch('private_key'), destination: "/home/vagrant/.ssh/id_rsa"
@@ -56,7 +58,6 @@ Vagrant.configure(2) do |config|
       server.vm.network :private_network, ip: IPAddr.new(server_ip.to_i + i - 1, Socket::AF_INET).to_s, nic_type: $private_nic_type
       server.vm.hostname = hostname
       server.vm.provision "shell", path: "scripts/configure_rancher_server.sh", args: [x.fetch('ip').fetch('master'), x.fetch('orchestrator'), i, x.fetch('version'), x.fetch('isolated'), x.fetch('sslenabled'), x.fetch('ssldns')]
-<<<<<<< HEAD
       if File.file?(x.fetch('keys').fetch('private_key'))
         config.vm.provision "file", source: x.fetch('keys').fetch('private_key'), destination: "/home/rancher/.ssh/id_rsa"
       end
@@ -71,9 +72,6 @@ Vagrant.configure(2) do |config|
         ", privileged: false
         end
       end
-=======
-    end
->>>>>>> 417a521d7f2a5991875905220bbc782283c64394
   end
 
   node_ip = IPAddr.new(x.fetch('ip').fetch('node'))
