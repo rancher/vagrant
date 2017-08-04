@@ -34,6 +34,7 @@ Vagrant.configure(2) do |config|
       server.vm.provider :virtualbox do |v|
         v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
         v.cpus = c.fetch('cpus')
+        v.linked_clone = true if Gem::Version.new(Vagrant::VERSION) >= Gem::Version.new('1.8.0') and x.fetch('linked_clones')
         v.memory = c.fetch('memory')
         v.name = hostname
       end
@@ -52,6 +53,7 @@ Vagrant.configure(2) do |config|
       node.vm.guest = :linux
       node.vm.provider "virtualbox" do |v|
         v.cpus = c.fetch('cpus')
+        v.linked_clone = true if Gem::Version.new(Vagrant::VERSION) >= Gem::Version.new('1.8.0') and x.fetch('linked_clones')
         v.memory = c.fetch('memory')
         v.name = hostname
       end
