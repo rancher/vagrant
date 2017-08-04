@@ -90,7 +90,6 @@ Vagrant.configure(2) do |config|
       node.vm.network :private_network, ip: IPAddr.new(node_ip.to_i + i - 1, Socket::AF_INET).to_s, nic_type: $private_nic_type
       node.vm.hostname = hostname
       node.vm.provision "shell", path: "scripts/configure_rancher_node.sh", args: [x.fetch('ip').fetch('master'), x.fetch('orchestrator'), x.fetch('isolated'), x.fetch('sslenabled'), x.fetch('ssldns')]
-<<<<<<< HEAD
       if File.file?(x.fetch('keys').fetch('private_key'))
         config.vm.provision "file", source: x.fetch('keys').fetch('private_key'), destination: "/home/rancher/.ssh/id_rsa"
       end
@@ -104,8 +103,6 @@ Vagrant.configure(2) do |config|
           chmod -R 600 /home/rancher/.ssh/authorized_keys
         ", privileged: false
         end
-=======
->>>>>>> 417a521d7f2a5991875905220bbc782283c64394
     end
   end
 
