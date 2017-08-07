@@ -2,6 +2,9 @@
 orchestrator: cattle
 # 'true'|'false' isolated network requiring proxy. must be in ''
 isolated: 'false' 
+# 'true'|'false'
+sslenabled: 'false'
+ssldns: 'server.rancher.vagrant'
 # https://hub.docker.com/r/rancher/server/tags/
 version: latest
 master:
@@ -27,3 +30,10 @@ ip:
 linked_clones: true
 net:
   private_nic_type: 82545EM
+  external_ssh: false
+  external_port: 2277
+  network_type: private_network
+# Location of ssh key files that want to be added to the servers
+keys:
+  public_key: ""
+  private_key: ""

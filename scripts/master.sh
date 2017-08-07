@@ -1,14 +1,24 @@
 #!/bin/bash -x
-isolated=${1:-true}
-cache_ip=${2:-172.22.101.100}
-password=${3:-rancher}
+isolated=${1:-false}
+sslenabled=${2:-false}
+rancher_server_ip=${3:-172.22.101.101}
+rancher_server_node=${4:-1}
+cache_ip=${5:-172.22.101.100}
+password=${6:-rancher}
 
-echo "DOCKER_OPTS=\"\$DOCKER_OPTS --registry-mirror http://$cache_ip:4000 --insecure-registry http://$cache_ip:5000\"" >> /etc/default/docker
+
+apt-get update
+apt-get install docker-engine
+
+echo "DOCKER_OPTS=\"\$DOCKER_OPTS --registry-mirror http://$cache_ip:4000 --insecure-registry http://$cache_ip:5000 --insecure-registry http://$cache_ip:4000\"" >> /etc/default/docker
 service docker restart
 
 # path to a remote share
 share_path=/vagrant/.vagrant/data
 mkdir -p $share_path
+
+chmod 0700 /home/vagrant/.ssh/rancher_id
+chown vagrant /home/vagrant/.ssh/rancher_id
 
 docker rm -f cadvisor
 
@@ -63,6 +73,7 @@ docker run \
   --name mysql \
   -p 3306:3306 \
   --net=host \
+  --restart=always \
   -v mysql:/var/lib/mysql \
   -e MYSQL_ROOT_PASSWORD=cattle \
   mysql:5.7.18
@@ -77,6 +88,7 @@ if [ $? -eq 0 ]; then
 fi
 
 #Setup haproxy for Rancher HA
+
 echo "#---------------------------------------------------------------------
 # Global settings
 #---------------------------------------------------------------------
@@ -115,20 +127,45 @@ listen stats
     stats uri /
     stats auth Username:Password
 
+backend ha-nodes
+   default-server inter 3s fall 3 rise 2" > $share_path/haproxy.cfg
+
+nextip(){
+    IP=$1
+    IP_HEX=$(printf '%.2X%.2X%.2X%.2X\n' `echo $IP | sed -e 's/\./ /g'`)
+    NEXT_IP_HEX=$(printf %.8X `echo $(( 0x$IP_HEX + 1 ))`)
+    NEXT_IP=$(printf '%d.%d.%d.%d\n' `echo $NEXT_IP_HEX | sed -r 's/(..)/0x\1 /g'`)
+    echo "$NEXT_IP"
+}
+
+IP=$rancher_server_ip
+for i in $(seq 1 $rancher_server_node); do
+    echo "   server ha-$i $IP:8080 check" >> $share_path/haproxy.cfg
+    IP=$(nextip $IP)
+done
+
+if [ "$sslenabled" == 'true' ]; then
+echo "
 frontend main
     mode http
     bind 0.0.0.0:80
-	default_backend ha-nodes
-
-backend ha-nodes
-   default-server inter 3s fall 3 rise 2
-   server ha-1 172.22.101.101:8080 check
-   server ha-2 172.22.101.102:8080 check
-   server ha-3 172.22.101.103:8080 check" > $share_path/haproxy.cfg
+	  redirect scheme https if !{ ssl_fc }
+	  bind 0.0.0.0:443 ssl crt /usr/local/etc/haproxy/haproxy.crt	
+    reqadd X-Forwarded-Proto:\ https
+    default_backend ha-nodes" >> $share_path/haproxy.cfg
+else
+echo "
+frontend main
+    mode http
+    bind 0.0.0.0:80
+    default_backend ha-nodes" >> $share_path/haproxy.cfg
+fi
 
 docker stop haproxy
 docker rm haproxy
-docker run -d --name haproxy --restart=always -p 80:80 -p 1936:1936 -v $share_path/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro haproxy:1.7
+docker run -d --name haproxy --restart=always -p 80:80 -p 443:443 -p 1936:1936 -v /vagrant/.vagrant/data/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro  -v /home/vagrant/haproxy.crt:/usr/local/etc/haproxy/haproxy.crt:ro haproxy:1.7
+
+#docker run -d --name haproxy --restart=always -p 80:80 -p 443:443 -p 1936:1936 -v $share_path/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro haproxy:1.7
 
 # Install nfs server
 sudo mkdir -p /home/vagrant/nfs
@@ -139,13 +176,14 @@ mkdir -p $share_path/registry
 docker run -d -p 5000:5000 --restart=always --name registry  -v  $share_path/registry:/var/lib/registry  registry:2
 
 #Run local proxy
-if [ "$isolated" = 'true' ]; then
+if [ "$isolated" == 'true' ] || [ "$sslenabled" == 'true' ]; then
     docker run -d --restart=always --name proxy -p 3128:3128 minimum2scp/squid
 
 #Setup dns proxy
 echo    "
+include \"/etc/bind/named.conf.local\";
 acl goodclients {
-        172.22.101.0/24;
+        $cache_ip/24;
         localhost;
         localnets;
 };
@@ -161,5 +199,30 @@ options {
         listen-on-v6 { any; };
 };" > /root/bind.conf
 
-    docker run -d --name bind9 -p 53:53 -p 53:53/udp -v /root/bind.conf:/etc/bind/named.conf resystit/bind9:latest
+echo "        zone \"rancher.vagrant\" {
+             type master;
+             file \"/etc/bind/db.rancher.vagrant\";
+        };" > /root/named.conf.local
+
+echo ";
+; BIND data file for local loopback interface
+;
+\$TTL    604800
+@       IN      SOA     ns.rancher.vagrant. root.rancher.vagrant. (
+                              1         ; Serial
+                         604800         ; Refresh
+                          86400         ; Retry
+                        2419200         ; Expire
+                         604800 )       ; Negative Cache TTL
+;
+@       IN      NS      rancher.vagrant.
+@       IN      A       127.0.0.1
+@       IN      AAAA    ::1
+@       IN      NS      ns.rancher.vagrant.
+ns      IN      A       $cache_ip
+
+;also list other computers
+server     IN      A       $cache_ip" > /root/db.rancher.vagrant
+
+    docker run -d --name bind9 -p 53:53 -p 53:53/udp -v /root/named.conf.local:/etc/bind/named.conf.local -v /root/bind.conf:/etc/bind/named.conf -v /root/db.rancher.vagrant:/etc/bind/db.rancher.vagrant resystit/bind9:latest
 fi
