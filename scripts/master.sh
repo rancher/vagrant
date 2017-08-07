@@ -1,8 +1,11 @@
 #!/bin/bash -x
 isolated=${1:-false}
 sslenabled=${2:-false}
-cache_ip=${3:-172.22.101.100}
-password=${4:-rancher}
+rancher_server_ip=${3:-172.22.101.101}
+rancher_server_node=${4:-1}
+cache_ip=${5:-172.22.101.100}
+password=${6:-rancher}
+
 
 apt-get update
 apt-get install docker-engine
@@ -13,36 +16,6 @@ service docker restart
 # path to a remote share
 share_path=/vagrant/.vagrant/data
 mkdir -p $share_path
-
-#add keys to vagrant
-echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCSR3TwJgGpIFFHLbtep+bUP1GopjFVgDlu1vN/PIeI2WpiQPlPuINwjWlJInGXx0HZKF/CfSk31X8NZQ5xzhAkDF75jBWCzN9uYHLiCCzNzRLyU1RBIKdnuKPUA7BTTgBN1WYqi56En0GLif8PkjKUR5FfKelzmZjNi7WC6iPCqOKyGa1J4zGPTmQrEZAmJXKcZV/Iyp457pcIIIQNhu9XETY71C4CDE87j3jj/TrCgAZM2kRN+67fJTy8ptLydsTM9OtbXjm/4jb7BDhUNN2HItC1A3rQCdRqC5JxcKQ7Yj5SaAEz37VLXEZkHPLDAg9lkxp4mybb/zLkWIjk/x6J vagrant" >> /home/vagrant/.ssh/authorized_keys
-echo "-----BEGIN RSA PRIVATE KEY-----
-MIIEowIBAAKCAQEAkkd08CYBqSBRRy27Xqfm1D9RqKYxVYA5btbzfzyHiNlqYkD5
-T7iDcI1pSSJxl8dB2Shfwn0pN9V/DWUOcc4QJAxe+YwVgszfbmBy4ggszc0S8lNU
-QSCnZ7ij1AOwU04ATdVmKouehJ9Bi4n/D5IylEeRXynpc5mYzYu1guojwqjishmt
-SeMxj05kKxGQJiVynGVfyMqeOe6XCCCEDYbvVxE2O9QuAgxPO4944/06woAGTNpE
-Tfuu3yU8vKbS8nbEzPTrW145v+I2+wQ4VDTdhyLQtQN60AnUaguScXCkO2I+UmgB
-M9+1S1xGZBzywwIPZZMaeJsm2/8y5FiI5P8eiQIDAQABAoIBACRi3fW2nochYNZh
-y8/Z2BNHxNo8rNzlzmOB2IP33Ibv/gR+wQVRknB23I+yn6rvh7Oq1VcdpxkaZEZC
-svsgFOfCpAVTES6+I33jQ/BxtCNlNadNjxG8O6gTR70/RacTKgQyZv2CSWYX70f0
-hZur9CTqQID5ffahaF8It5ffAhIzbBpC1Ezc1yBiWrsR16j7McucVkHtRDIIM+XR
-vVmxultCwlISSocvCttFcmcJHYDo3aAHGctzBshQHR6gpG2WWKkDPz9I+hCcOCSp
-+KN1emrb/9GTojfgmqn2cl+dRbiWUtBeeY/xy0TzytTgu3Ox+UqYrAHUZtyP4WZY
-1YMVLWECgYEAwrg24KT2RVx/58yDSswSXdXCtTCJHJMrxpcnYhhS0XltZr7kW1Vk
-oE2hWvDXqJuMB+sdJoU8YIX4v2OKOmRYyhocEe6ELHcNa4XtJwX/mPj3C3lQMGeN
-OEGhchT1RDbCGNUzyeNWmfYV+dl+PMNY1qvOoUHM3Fg3TGRuB7VJ3ZUCgYEAwFCW
-KDN2/SOdGKERMi43eErroJpmKB7bF9RZ6UbYaCjfvfMk1DCylLsbycVc1s7RmCs0
-V0AtCgREHePXS4qGR1ecUtZIPQ+ydHISvo53IW/TORHPz8VQQSmPJnQK+qtVkFNR
-ZPlb/Kr/4zD1k/pcusYcb4Ba4+RwxwauPIgTuCUCgYEAwLkVT7jWKwaHbgSEOibL
-UuZ8hVsZihe77x2yFCwg5EV724K6gA9/vg2300unF7GEol25h2O9w4c2ES/TI0Io
-gzfean0Zguz+clqmw8XzGhPoaAnVLWOAaZrD0ScfLjnIWE3EqWCCWXYwgA8dG8T5
-C9gWdpKq0bfaW5jXMnfjORUCgYBXpKI54fJpPNC8R7MZhlx7MtGdWKATyrQYcQsk
-t8ep+G63F1cCaMsJ4xev5YUA1DJKwe3RkYq1FOqiIJKed5voaXHxgnxbb4rpbI9E
-TpLWJytAx/BIBOklOTZm1N2oDWsqIf5nIQkd5iRFuqtAbAnUiLKu0fUaBKKs4UuI
-hI9QDQKBgCXeVvAjb0Ys55tO2FYHcH5PuC3sGraNZjLVZPF21RsKvzCWF0tExJJk
-sArpXUg9FqvqOfWLsUmny/W0p7T86anq0HA+tMoBtEF6GnXeCDuEHjN9CwM9uQp1
-IzlmmV8pDc/Uddf7lFuOLEQh3CIbuZZRvycQlAJyVIx5RTahxe7C
------END RSA PRIVATE KEY-----" > /home/vagrant/.ssh/rancher_id
 
 chmod 0700 /home/vagrant/.ssh/rancher_id
 chown vagrant /home/vagrant/.ssh/rancher_id
@@ -114,9 +87,8 @@ if [ $? -eq 0 ]; then
       -e "CREATE DATABASE IF NOT EXISTS cattle COLLATE = 'utf8_general_ci' CHARACTER SET = 'utf8';"
 fi
 
-
-
 #Setup haproxy for Rancher HA
+
 echo "#---------------------------------------------------------------------
 # Global settings
 #---------------------------------------------------------------------
@@ -156,10 +128,21 @@ listen stats
     stats auth Username:Password
 
 backend ha-nodes
-   default-server inter 3s fall 3 rise 2
-   server ha-1 172.22.101.101:8080 check
-   server ha-2 172.22.101.102:8080 check
-   server ha-3 172.22.101.103:8080 check" > $share_path/haproxy.cfg
+   default-server inter 3s fall 3 rise 2" > $share_path/haproxy.cfg
+
+nextip(){
+    IP=$1
+    IP_HEX=$(printf '%.2X%.2X%.2X%.2X\n' `echo $IP | sed -e 's/\./ /g'`)
+    NEXT_IP_HEX=$(printf %.8X `echo $(( 0x$IP_HEX + 1 ))`)
+    NEXT_IP=$(printf '%d.%d.%d.%d\n' `echo $NEXT_IP_HEX | sed -r 's/(..)/0x\1 /g'`)
+    echo "$NEXT_IP"
+}
+
+IP=$rancher_server_ip
+for i in $(seq 1 $rancher_server_node); do
+    echo "   server ha-$i $IP:8080 check" >> $share_path/haproxy.cfg
+    IP=$(nextip $IP)
+done
 
 if [ "$sslenabled" == 'true' ]; then
 echo "
@@ -170,57 +153,6 @@ frontend main
 	  bind 0.0.0.0:443 ssl crt /usr/local/etc/haproxy/haproxy.crt	
     reqadd X-Forwarded-Proto:\ https
     default_backend ha-nodes" >> $share_path/haproxy.cfg
-
-
-#SSL Termination cert for HAProxy
-echo "-----BEGIN CERTIFICATE-----
-MIIDFTCCAf2gAwIBAgIJAN2yyLTWbidBMA0GCSqGSIb3DQEBBQUAMCExHzAdBgNV
-BAMMFnNlcnZlci5yYW5jaGVyLnZhZ3JhbnQwHhcNMTcwNzI5MTQxMjQ1WhcNMjcw
-NzI3MTQxMjQ1WjAhMR8wHQYDVQQDDBZzZXJ2ZXIucmFuY2hlci52YWdyYW50MIIB
-IjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwLq7oWQwnSAR696FL7w2W7t/
-MVCioPnnJV8tFfTvIZ/zQsH4ul9rjdv0NGLcPEXXtdDxsadn+hMWUYAqPNn2YDav
-pa0HhEFL/WGnUAP/XE2Vrop7QYh/heu8BIOOQ2rAOaxlLUscDYSmA3BeIEIoDLSc
-+A9+xVMikc6SkSQ4qpZOF7GvLfbwEYs3ii7PFUTzxDbmWsOuEEyRyJ36+6fmTTIu
-w6rrnsCqUF7AfIEcgxEVOTxtMoY/v8427AP+0B4pAGrY7siwqoiXtWERraVuyAwn
-0IkKK4LH/lH30KwzPZTV825aE2Ob05MAg3Sbgi83BfMZQpbloJKj/MosmcXfGwID
-AQABo1AwTjAdBgNVHQ4EFgQUXlHYBOn21xjD64UiFrQa+hoFFyIwHwYDVR0jBBgw
-FoAUXlHYBOn21xjD64UiFrQa+hoFFyIwDAYDVR0TBAUwAwEB/zANBgkqhkiG9w0B
-AQUFAAOCAQEAQo+VJv2VkXAe03RL5PBSopE50XNF0xUvMH45gt2lnh4bz2HXTaLy
-XcbMzFWeClKWvkqfb9vhlClhmusJYYzkWsSJ5il7YNYVI4m+z33XtTeR0Pzuy2XQ
-BrRf+kz6KP5DJt1HusTN+gJFJ0EI850USscCjR2TiPWe7zgKt8WJ/W5c3rVwLFy5
-Z/nsoi16UmSJXKkJzXA+tM6K5DCx1p4LmuZXSzB5EwkL9okqA903Vj6kv9JwaHJl
-4IgQPgzN0f5iPZNsMboEFfhcYVRRYoznnJzL7VCg1ig5j9JyfsjSpozVFE2CY/52
-tRubyXjH+dQQftBUuzwULwwKGL0le7o/vA==
------END CERTIFICATE-----
------BEGIN RSA PRIVATE KEY-----
-MIIEpQIBAAKCAQEAwLq7oWQwnSAR696FL7w2W7t/MVCioPnnJV8tFfTvIZ/zQsH4
-ul9rjdv0NGLcPEXXtdDxsadn+hMWUYAqPNn2YDavpa0HhEFL/WGnUAP/XE2Vrop7
-QYh/heu8BIOOQ2rAOaxlLUscDYSmA3BeIEIoDLSc+A9+xVMikc6SkSQ4qpZOF7Gv
-LfbwEYs3ii7PFUTzxDbmWsOuEEyRyJ36+6fmTTIuw6rrnsCqUF7AfIEcgxEVOTxt
-MoY/v8427AP+0B4pAGrY7siwqoiXtWERraVuyAwn0IkKK4LH/lH30KwzPZTV825a
-E2Ob05MAg3Sbgi83BfMZQpbloJKj/MosmcXfGwIDAQABAoIBAFqp/YZIyY3A/m1F
-OsZf9fplU8pxMnAj35b3FRCVLsFUq20mLsoOBVywskrKjuxTtswzRN/b7s/3lrI0
-ZqpFpt9QGoUHxtdymDrUa476snBLlzSKtLz5Z3Qql0JQWOZiG5eF//q0sLezRR2t
-CLqIJKsFdCpFr89H8qVA1jYtIfMs/PDechbzlFGTuxfO97AboNozg7ufB86uALgA
-pNlXI4D/9duwjTaQNAE9ezI0tig0dMyjTo6haV+1cIj1schjPQc75iIYS2YAescC
-r0/3mJt/xFmNu+pKt3lrdwfsFvMp8JQtb2oOwiQwqJyB9g4vDhAlGJAlRLYErQn/
-JVS6MiECgYEA5KLFo7mHr7/4roPDl5KVIeXFeih5VhVy6mT6Js5vIkQGYVYW8jr7
-zjXlWZqU3fZPxHNgAFUCtqehfl9/kxJ0Wfivt3tC3yPl4VxNGdSSpDZ0/N0GbGVO
-VA+yqRAtLse4WkgSFeH/7AGEhXxR+Vof3FMJIobsWzs+5TNfzD+xUzMCgYEA18vQ
-5o8CQ6WnfOwYjOVSmHnRJaf+86Q+x7Tv/7zKhSjpcxZ4SFCCbR9C6Pgk3zNFPBq9
-U59z9TsxSS19LIh+xIfQiugzjPPLtYFWnDQ5CGvjmGo3wWV+9Gd/kUkUwd8o/p2+
-DY83+Zk0FtfzENNe4lYnMEzIAuMQufcRM4e0RHkCgYEAs+KpU37Gle2ZkFzVR+0p
-bskkTU+I38TybB7UfjHPWIti5bRhS2ZC9eSLtasc02JXMj6AWuKHxwQu2In0itdr
-OdqjDd5qJ7xLwrrnYppQYekCtGyGAETYkuTi8YdrtTGoB0hLCnKM87fh91BwApr5
-FFU0i7jSP5lmi9iW19GJB+cCgYEArEkyAFEeyqlf3fGU7DBOUCO5oinM9/IimUjQ
-78lnmwZ903+WCo4Ug1CZF+y9a2HAnervSuscJibbA4SI0lwrcXbJPY2DUr513fRk
-FJPxENMqQ05SM1p4EGLtSy4gn2Quk5GW4bZ9Rw5UswQ4MC/BKk0EPqCecwecHAyw
-NAbdGmkCgYEAsjTNrP9lyUgCn3Xz2Q1dEKMBLICXB7RvrcOQHZGRI/ptVmKOh7FT
-+cg6f1otVPm1NCOEng633lJ3EduHcqRrqHs7PWJ9QoKqgyLK6jObU03KGE4kpiha
-M8HpKBkMOpDEh5be8camqqf/0eE51fEpwYDjZQYlfQ0dtWM3u53BDb4=
------END RSA PRIVATE KEY-----
-" > $share_path/haproxy.crt
-
 else
 echo "
 frontend main
@@ -231,7 +163,7 @@ fi
 
 docker stop haproxy
 docker rm haproxy
-docker run -d --name haproxy --restart=always -p 80:80 -p 443:443 -p 1936:1936 -v /vagrant/.vagrant/data/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro  -v /vagrant/.vagrant/data/haproxy.crt:/usr/local/etc/haproxy/haproxy.crt:ro haproxy:1.7
+docker run -d --name haproxy --restart=always -p 80:80 -p 443:443 -p 1936:1936 -v /vagrant/.vagrant/data/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro  -v /home/vagrant/haproxy.crt:/usr/local/etc/haproxy/haproxy.crt:ro haproxy:1.7
 
 #docker run -d --name haproxy --restart=always -p 80:80 -p 443:443 -p 1936:1936 -v $share_path/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro haproxy:1.7
 
@@ -251,7 +183,7 @@ if [ "$isolated" == 'true' ] || [ "$sslenabled" == 'true' ]; then
 echo    "
 include \"/etc/bind/named.conf.local\";
 acl goodclients {
-        172.22.101.0/24;
+        $cache_ip/24;
         localhost;
         localnets;
 };
@@ -287,10 +219,10 @@ echo ";
 @       IN      A       127.0.0.1
 @       IN      AAAA    ::1
 @       IN      NS      ns.rancher.vagrant.
-ns      IN      A       172.22.101.100
+ns      IN      A       $cache_ip
 
 ;also list other computers
-server     IN      A       172.22.101.100" > /root/db.rancher.vagrant
+server     IN      A       $cache_ip" > /root/db.rancher.vagrant
 
     docker run -d --name bind9 -p 53:53 -p 53:53/udp -v /root/named.conf.local:/etc/bind/named.conf.local -v /root/bind.conf:/etc/bind/named.conf -v /root/db.rancher.vagrant:/etc/bind/db.rancher.vagrant resystit/bind9:latest
 fi

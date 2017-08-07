@@ -16,18 +16,21 @@ Vagrant.configure(2) do |config|
     c = x.fetch('master')
     master.vm.box = "williamyeh/ubuntu-trusty64-docker"
     master.vm.guest = :ubuntu
-    master.vm.network :private_network, ip: x.fetch('ip').fetch('master'), nic_type: $private_nic_type    
+    master.vm.network x.fetch('net').fetch('network_type'), ip: x.fetch('ip').fetch('master'), nic_type: $private_nic_type    
     master.vm.provider :virtualbox do |v|
       v.cpus = c.fetch('cpus')
       v.memory = c.fetch('memory')
       v.name = "master"
     end
     if x.fetch('net').fetch('external_ssh')
-      master.vm.network "forwarded_port", guest: 22, host: 2277
+      master.vm.network "forwarded_port", guest: 22, host: x.fetch('net').fetch('external_port')
     end
-    master.vm.provision "shell", path: "scripts/master.sh", args: [x.fetch('isolated'),x.fetch('sslenabled')]
+    if x.fetch('sslenabled')
+       master.vm.provision "file", source: "./certs/haproxy.crt", destination: "/home/vagrant/haproxy.crt"
+    end
+    master.vm.provision "shell", path: "scripts/master.sh", args: [x.fetch('isolated'),x.fetch('sslenabled'),x.fetch('ip').fetch('server'),x.fetch('server').fetch('count'),x.fetch('ip').fetch('master')]
     if File.file?(x.fetch('keys').fetch('private_key'))
-       config.vm.provision "file", source: x.fetch('keys').fetch('private_key'), destination: "/home/vagrant/.ssh/id_rsa"
+       master.vm.provision "file", source: x.fetch('keys').fetch('private_key'), destination: "/home/vagrant/.ssh/id_rsa"
     end
     if File.file?(x.fetch('keys').fetch('public_key')) 
        public_key = File.read(x.fetch('keys').fetch('public_key'))
@@ -55,9 +58,9 @@ Vagrant.configure(2) do |config|
         v.memory = c.fetch('memory')
         v.name = hostname
       end
-      server.vm.network :private_network, ip: IPAddr.new(server_ip.to_i + i - 1, Socket::AF_INET).to_s, nic_type: $private_nic_type
+      server.vm.network x.fetch('net').fetch('network_type'), ip: IPAddr.new(server_ip.to_i + i - 1, Socket::AF_INET).to_s, nic_type: $private_nic_type
       server.vm.hostname = hostname
-      server.vm.provision "shell", path: "scripts/configure_rancher_server.sh", args: [x.fetch('ip').fetch('master'), x.fetch('orchestrator'), i, x.fetch('version'), x.fetch('isolated'), x.fetch('sslenabled'), x.fetch('ssldns')]
+      server.vm.provision "shell", path: "scripts/configure_rancher_server.sh", args: [x.fetch('ip').fetch('master'), x.fetch('orchestrator'), i, x.fetch('version'), x.fetch('isolated'), x.fetch('sslenabled'), x.fetch('ssldns'), x.fetch('ip').fetch('master')]
       if File.file?(x.fetch('keys').fetch('private_key'))
         config.vm.provision "file", source: x.fetch('keys').fetch('private_key'), destination: "/home/rancher/.ssh/id_rsa"
       end
@@ -87,9 +90,9 @@ Vagrant.configure(2) do |config|
         v.memory = c.fetch('memory')
         v.name = hostname
       end
-      node.vm.network :private_network, ip: IPAddr.new(node_ip.to_i + i - 1, Socket::AF_INET).to_s, nic_type: $private_nic_type
+      node.vm.network x.fetch('net').fetch('network_type'), ip: IPAddr.new(node_ip.to_i + i - 1, Socket::AF_INET).to_s, nic_type: $private_nic_type
       node.vm.hostname = hostname
-      node.vm.provision "shell", path: "scripts/configure_rancher_node.sh", args: [x.fetch('ip').fetch('master'), x.fetch('orchestrator'), x.fetch('isolated'), x.fetch('sslenabled'), x.fetch('ssldns')]
+      node.vm.provision "shell", path: "scripts/configure_rancher_node.sh", args: [x.fetch('ip').fetch('master'), x.fetch('orchestrator'), x.fetch('isolated'), x.fetch('sslenabled'), x.fetch('ssldns'), x.fetch('ip').fetch('master')]
       if File.file?(x.fetch('keys').fetch('private_key'))
         config.vm.provision "file", source: x.fetch('keys').fetch('private_key'), destination: "/home/rancher/.ssh/id_rsa"
       end

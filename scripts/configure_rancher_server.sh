@@ -2,12 +2,13 @@
 
 rancher_server_ip=${1:-172.22.101.100}
 orchestrator=${2:-cattle}
-node=${3}
-cache_ip=172.22.101.100
+node=${3:-3}
 rancher_server_version=${4:-stable}
 isolated=${5:-false}
 sslenabled=${6:-false}
 ssldns=${7:-server.rancher.vagrant}
+cache_ip=${8:-172.22.101.100}
+
 if [ "$sslenabled" == 'true' ]; then
   protocol="https"
   rancher_server_ip=$ssldns

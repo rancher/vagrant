@@ -2,4 +2,4 @@
 registry
 vagrantup.bat
 /vault
-/keys
+/certs/localrancher*
