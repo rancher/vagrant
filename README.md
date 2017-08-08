@@ -23,19 +23,23 @@ This has been tested with vagrant 1.9.1 and VirtualBox 5.0.32. If you experience
 
 The config.yml contains any variables that you should need to change, below is a description of the variables and their values:
 
-*orchestrator* - Possible values are **cattle**, **kubernetes**, **mesos** and **swarm** 
+**orchestrator** - Possible values are `cattle`, `kubernetes`, `mesos` and `swarm` 
+
 This sets the orchestrator that will be used for the environment, as part of the process the Default environment is deleted and we create a new one with the name of the orchestrator. 
 
-*isolated* - Possible values are **true** and **false**
+**isolated** - Possible values are **true** and **false**
+
 This sets the Rancher Server and Rancher nodes to have no external internet access other than via a proxy server that runs on the master node. This is used to emulate environments where a proxy server is required to access the internet
 
-*sslenabled* - Possible values are **true** and **false**
+**sslenabled** - Possible values are **true** and **false**
+
 This uses a pre-generated certificate to terminate the connection to the Rancher server with SSL. This certificate is located in the /certs folder. If this is changed then the public key will need to be replaced in the configure_rancher_node.sh script otherwise the agent will error.
 
-*ssldns* - Default value is **server.rancher.vagrant**
+**ssldns** - Default value is **server.rancher.vagrant**
+
 The setting for this needs to match the string that is stored in the SSL certificate that is used for termination.
 
-*version* - Possible values **latest**, **stable**, **v1.x.x** where x.x is any release of Rancher Server
+**version** - Possible values **latest**, **stable**, **v1.x.x** where x.x is any release of Rancher Server
 This is the version of Rancher Server that you want to be deployed into you environment
 
 *master* - Settings for the master node that runs the proxy, registry mirror etc, this value should not be changed
