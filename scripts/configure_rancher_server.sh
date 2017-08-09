@@ -4,10 +4,15 @@ rancher_server_ip=${1:-172.22.101.100}
 orchestrator=${2:-cattle}
 node=${3:-3}
 rancher_server_version=${4:-stable}
-isolated=${5:-false}
+network_type=${5:-false}
 sslenabled=${6:-false}
 ssldns=${7:-server.rancher.vagrant}
 cache_ip=${8:-172.22.101.100}
+registry_prefix="rancher"
+
+if [ "$network_type" == "airgap" ]; then
+   registry_prefix=$cache_ip:5000
+fi
 
 if [ "$sslenabled" == 'true' ]; then
   protocol="https"
@@ -20,15 +25,16 @@ if [ ! "$(ps -ef | grep dockerd | grep -v grep | grep "$cache_ip")" ]; then
   ros config set rancher.docker.registry_mirror "http://$cache_ip:4000"
   ros config set rancher.system_docker.registry_mirror "http://$cache_ip:4000"
   ros config set rancher.docker.host "['unix:///var/run/docker.sock', 'tcp://0.0.0.0:2375']"
-  if [ "$isolated" == 'true' ]; then
-    ros config set rancher.docker.environment "['http_proxy=http://$cache_ip:3128','https_proxy=http://$cache_ip:3128','HTTP_PROXY=http://$cache_ip:3128','HTTPS_PROXY=http://$cache_ip:3128','no_proxy=server.rancher.vagrant,localhost,127.0.0.1','NO_PROXY=server.rancher.vagrant,localhost,127.0.0.1']"
-    ros config set rancher.system_docker.environment "['http_proxy=http://$cache_ip:3128','https_proxy=http://$cache_ip:3128','HTTP_PROXY=http://$cache_ip:3128','HTTPS_PROXY=http://$cache_ip:3128','no_proxy=server.rancher.vagrant,localhost,127.0.0.1','NO_PROXY=server.rancher.vagrant,localhost,127.0.0.1']"
+  ros config set rancher.docker.insecure_registry "['$cache_ip:5000']"
+  if [ "$network_type" == "isolated" ]; then
+    ros config set rancher.docker.environment "['http_proxy=http://$cache_ip:3128','https_proxy=http://$cache_ip:3128','HTTP_PROXY=http://$cache_ip:3128','HTTPS_PROXY=http://$cache_ip:3128','no_proxy=172.22.101.100,server.rancher.vagrant,localhost,127.0.0.1','NO_PROXY=172.22.101.100,server.rancher.vagrant,localhost,127.0.0.1']"
+    ros config set rancher.system_docker.environment "['http_proxy=http://$cache_ip:3128','https_proxy=http://$cache_ip:3128','HTTP_PROXY=http://$cache_ip:3128','HTTPS_PROXY=http://$cache_ip:3128','no_proxy=172.22.101.100,server.rancher.vagrant,localhost,127.0.0.1','NO_PROXY=172.22.101.100,server.rancher.vagrant,localhost,127.0.0.1']"
   fi  
   system-docker restart docker
   sleep 5
 fi
 
-if [ "$isolated" == 'true' ]; then
+if [ "$network_type" == "isolated" ] || [ "$network_type" == "bairgap" ] ; then
   ros config set rancher.network.dns.nameservers ["'$cache_ip'"]
   system-docker restart network
   route add default gw $cache_ip
@@ -43,7 +49,7 @@ SUSPEND=n
 CATTLE_JAVA_OPTS="-Xms128m -Xmx1g -XX:+HeapDumpOnOutOfMemoryError -agentlib:jdwp=transport=dt_socket,server=y,suspend=$SUSPEND,address=1044"
 
 EXTRA_OPTS=""
-if [ "$isolated" == 'true' ]; then
+if [ "$network_type" == "isolated" ]; then
   EXTRA_OPTS="-e http_proxy='http://$cache_ip:3128' \
  -e https_proxy='http://$cache_ip:3128' \
  -e HTTP_PROXY='http://$cache_ip:3128' \
@@ -62,7 +68,7 @@ sudo docker run -d --restart=always \
  -e CATTLE_JAVA_OPTS="$CATTLE_JAVA_OPTS" \
  --restart=unless-stopped \
  --name rancher-server \
- rancher/server:$rancher_server_version \
+ $registry_prefix/server:$rancher_server_version \
  --db-host $cache_ip \
  --db-port 3306 \
  --db-name cattle \

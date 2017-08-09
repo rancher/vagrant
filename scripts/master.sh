@@ -1,14 +1,17 @@
 #!/bin/bash -x
-isolated=${1:-false}
+network_mode=${1:-false}
 sslenabled=${2:-false}
 rancher_server_ip=${3:-172.22.101.101}
 rancher_server_node=${4:-1}
 cache_ip=${5:-172.22.101.100}
-password=${6:-rancher}
+rancher_server_version=${6:-latest}
+password=${7:-rancher}
 
 
 apt-get update
+apt-get install jq
 apt-get install docker-engine
+
 
 echo "DOCKER_OPTS=\"\$DOCKER_OPTS --registry-mirror http://$cache_ip:4000 --insecure-registry http://$cache_ip:5000 --insecure-registry http://$cache_ip:4000\"" >> /etc/default/docker
 service docker restart
@@ -176,7 +179,7 @@ mkdir -p $share_path/registry
 docker run -d -p 5000:5000 --restart=always --name registry  -v  $share_path/registry:/var/lib/registry  registry:2
 
 #Run local proxy
-if [ "$isolated" == 'true' ] || [ "$sslenabled" == 'true' ]; then
+if [ "$network_mode" == "isolated" ] || [ "$network_mode" == "airgap" ] || [ "$sslenabled" == 'true' ]; then
     docker run -d --restart=always --name proxy -p 3128:3128 minimum2scp/squid
 
 #Setup dns proxy
@@ -224,5 +227,30 @@ ns      IN      A       $cache_ip
 ;also list other computers
 server     IN      A       $cache_ip" > /root/db.rancher.vagrant
 
-    docker run -d --name bind9 -p 53:53 -p 53:53/udp -v /root/named.conf.local:/etc/bind/named.conf.local -v /root/bind.conf:/etc/bind/named.conf -v /root/db.rancher.vagrant:/etc/bind/db.rancher.vagrant resystit/bind9:latest
+    docker run -d --restart=always --name bind9 -p 53:53 -p 53:53/udp -v /root/named.conf.local:/etc/bind/named.conf.local -v /root/bind.conf:/etc/bind/named.conf -v /root/db.rancher.vagrant:/etc/bind/db.rancher.vagrant resystit/bind9:latest
+fi
+
+if [ "$network_mode" == "airgap" ] ; then
+
+docker run -d -p 7070:7070 --restart=always --name rivapi llparse/registryranch:0.2
+sleep 15
+curl -Ss  "http://localhost:7070/images/$rancher_server_version" | jq -r '.images' | \
+  while read key
+  do
+    image="${key//\"}"
+
+    searchstring="/"
+    rest=${image#*$searchstring}
+    if [ "${#rest}" -gt "5" ]; then
+      docker pull ${image//,}
+      docker tag ${image//,} $cache_ip:5000/${rest//,}
+      docker push $cache_ip:5000/${rest//,}
+    fi
+  done
+  docker pull rancher/server:$rancher_server_version
+  docker tag rancher/server:$rancher_server_version $cache_ip:5000/server:$rancher_server_version
+  docker push $cache_ip:5000/server:$rancher_server_version
+  docker pull rancher/os-docker:1.12.6
+  docker tag rancher/os-docker:1.12.6 $cache_ip:5000/os-docker:1.12.6
+  docker push $cache_ip:5000/os-docker:1.12.6
 fi
