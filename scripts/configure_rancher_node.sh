@@ -1,11 +1,12 @@
 #!/bin/bash -x
-
 rancher_server_ip=${1:-172.22.101.100}
 orchestrator=${2:-cattle}
-isolated=${3:-false}
+network_type=${3:-false}
 sslenabled=${4:-false}
 ssldns=${5:-server.rancher.vagrant}
 cache_ip=${6:-172.22.101.100}
+
+curlprefix="appropriate"
 if [ "$sslenabled" == 'true' ]; then
   protocol="https"
   rancher_server_ip=$ssldns
@@ -13,18 +14,23 @@ else
   protocol="http"
 fi
 
-if [ ! "$(ps -ef | grep dockerd | grep -v grep | grep "$cache_ip")" ]; then
+if [ "$network_type" == "airgap" ] ; then
+  curlprefix="$cache_ip:5000"
+fi
+
+ros config set rancher.docker.insecure_registry "['$cache_ip:5000']"
+if [ ! "$network_type" == "airgap" ] ; then
   ros config set rancher.docker.registry_mirror "http://$cache_ip:4000"
   ros config set rancher.system_docker.registry_mirror "http://$cache_ip:4000"
   ros config set rancher.docker.host "['unix:///var/run/docker.sock', 'tcp://0.0.0.0:2375']"
-  ros config set rancher.docker.insecure_registry "['$cache_ip:5000']"
-  if [ "$isolated" == 'true' ]; then
+  if [ "$network_type" == "isolated" ]; then
     ros config set rancher.docker.environment "['http_proxy=http://$cache_ip:3128','https_proxy=http://$cache_ip:3128','HTTP_PROXY=http://$cache_ip:3128','HTTPS_PROXY=http://$cache_ip:3128','no_proxy=server.rancher.vagrant,localhost,127.0.0.1','NO_PROXY=server.rancher.vagrant,localhost,127.0.0.1']"
     ros config set rancher.system_docker.environment "['http_proxy=http://$cache_ip:3128','https_proxy=http://$cache_ip:3128','HTTP_PROXY=http://$cache_ip:3128','HTTPS_PROXY=http://$cache_ip:3128','no_proxy=server.rancher.vagrant,localhost,127.0.0.1','NO_PROXY=server.rancher.vagrant,localhost,127.0.0.1']"
   fi
-  system-docker restart docker
-  sleep 5
 fi
+
+system-docker restart docker
+sleep 5
 
 if [ "$sslenabled" == 'true' ]; then
 mkdir -p /var/lib/rancher/etc/ssl
@@ -56,7 +62,7 @@ if [ "$orchestrator" == "kubernetes" ] && [ ! "$(ros engine list | grep current 
   sleep 5
 fi
 
-if [ "$isolated" == 'true' ]; then
+if [ "$network_type" == "isolated" ] || [ "$network_type" == "airgap" ] ; then
   ros config set rancher.network.dns.nameservers ["'$cache_ip'"]
   system-docker restart network
   route add default gw $cache_ip
@@ -71,7 +77,7 @@ while true; do
   ENV_ID=$(docker run \
     -v /tmp:/tmp \
     --rm \
-    appropriate/curl \
+    $curlprefix/curl \
       -sLk \
       "$protocol://$rancher_server_ip/v2-beta/project?name=$orchestrator" | jq '.data[0].id' | tr -d '"')
 
@@ -88,7 +94,7 @@ echo Adding host to Rancher Server
 docker run \
   -v /tmp:/tmp \
   --rm \
-  appropriate/curl \
+  $curlprefix/curl \
     -sLk \
     -X POST \
     -H 'Content-Type: application/json' \
@@ -96,10 +102,23 @@ docker run \
     -d "{\"type\":\"registrationToken\"}" \
       "$protocol://$rancher_server_ip/v2-beta/projects/$ENV_ID/registrationtoken"
 
+if [ "$network_type" == "airgap" ]; then
 docker run \
   -v /tmp:/tmp \
   --rm \
-  appropriate/curl \
+  $curlprefix/curl \
+    -sLk \
+    "$protocol://$rancher_server_ip/v2-beta/projects/$ENV_ID/registrationtokens/?state=active" |
+      grep -Eo '[^,]*' |
+      grep -E 'command' |
+      awk '{gsub("\"command\":\"", ""); gsub("\"", ""); gsub(" rancher", " '$cache_ip':5000") ; print}' |
+      head -n1 |
+      sh
+else
+docker run \
+  -v /tmp:/tmp \
+  --rm \
+  $curlprefix/curl \
     -sLk \
     "$protocol://$rancher_server_ip/v2-beta/projects/$ENV_ID/registrationtokens/?state=active" |
       grep -Eo '[^,]*' |
@@ -107,3 +126,4 @@ docker run \
       awk '{gsub("\"command\":\"", ""); gsub("\"", ""); print}' |
       head -n1 |
       sh
+fi

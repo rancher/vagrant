@@ -238,19 +238,50 @@ curl -Ss  "http://localhost:7070/images/$rancher_server_version" | jq -r '.image
   while read key
   do
     image="${key//\"}"
-
     searchstring="/"
     rest=${image#*$searchstring}
     if [ "${#rest}" -gt "5" ]; then
-      docker pull ${image//,}
-      docker tag ${image//,} $cache_ip:5000/${rest//,}
-      docker push $cache_ip:5000/${rest//,}
+      imageandtag=(${rest//:/ })
+      exists=$(curl -Ss http://$cache_ip:5000/v2/${imageandtag[0]}/tags/list | jq -r '.tags' | grep ${imageandtag[1]//,})
+      if [ "${#exists}" -gt "2" ]; then
+        echo "Image $image already in local cache"
+      else
+        docker pull ${image//,}
+        docker tag ${image//,} $cache_ip:5000/${rest//,}
+        docker push $cache_ip:5000/${rest//,}
+      fi
     fi
   done
-  docker pull rancher/server:$rancher_server_version
-  docker tag rancher/server:$rancher_server_version $cache_ip:5000/server:$rancher_server_version
-  docker push $cache_ip:5000/server:$rancher_server_version
-  docker pull rancher/os-docker:1.12.6
-  docker tag rancher/os-docker:1.12.6 $cache_ip:5000/os-docker:1.12.6
-  docker push $cache_ip:5000/os-docker:1.12.6
+  exists=$(curl -Ss http://$cache_ip:5000/v2/server/tags/list | jq -r '.tags' | grep $rancher_server_version)
+  if [ "${#exists}" -gt "2" ]; then
+    echo "Image rancher/server:$rancher_server_version already in local cache"
+  else
+    docker pull rancher/server:$rancher_server_version
+    docker tag rancher/server:$rancher_server_version $cache_ip:5000/server:$rancher_server_version
+    docker push $cache_ip:5000/server:$rancher_server_version
+  fi 
+  exists=$(curl -Ss http://$cache_ip:5000/v2/agent/tags/list | jq -r '.tags' | grep v1.2.5)
+  if [ "${#exists}" -gt "2" ]; then
+    echo "Image rancher/agent:v1.2.5 already in local cache"
+  else
+    docker pull rancher/agent:v1.2.5
+    docker tag rancher/agent:v1.2.5 $cache_ip:5000/agent:v1.2.5
+    docker push $cache_ip:5000/agent:v1.2.5
+  fi 
+  exists=$(curl -Ss http://$cache_ip:5000/v2/os-docke/tags/list | jq -r '.tags' | grep 1.12.6)
+  if [ "${#exists}" -gt "2" ]; then
+    echo "Image rancher/os-docker:1.12.6  already in local cache"
+  else
+    docker pull rancher/os-docker:1.12.6
+    docker tag rancher/os-docker:1.12.6 $cache_ip:5000/os-docker:1.12.6
+    docker push $cache_ip:5000/os-docker:1.12.6
+  fi
+  exists=$(curl -Ss http://$cache_ip:5000/v2/curl/tags/list | jq -r '.tags' | grep latest)
+  if [ "${#exists}" -gt "2" ]; then
+    echo "Image appropriate/curl  already in local cache"
+  else
+    docker pull appropriate/curl
+    docker tag appropriate/curl $cache_ip:5000/curl
+    docker push $cache_ip:5000/curl
+  fi
 fi
