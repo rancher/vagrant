@@ -8,6 +8,7 @@ network_type=${5:-false}
 sslenabled=${6:-false}
 ssldns=${7:-server.rancher.vagrant}
 cache_ip=${8:-172.22.101.100}
+rancher_env_vars=${9}
 registry_prefix="rancher"
 curl_prefix="appropriate"
 
@@ -60,6 +61,13 @@ if [ "$network_type" == "isolated" ]; then
  -e no_proxy='server.rancher.vagrant,localhost,127.0.0.1' \
  -e NO_PROXY='server.rancher.vagrant,localhost,127.0.0.1'"
 fi
+rancher_command=""
+if [ "$network_type" == "airgap" ]; then
+  EXTRA_OPTS="-e CATTLE_BOOTSTRAP_REQUIRED_IMAGE=$cache_ip:5000/rancher/agent:v1.2.5"
+  rancher_command="$registry_prefix/rancher/server:$rancher_server_version" 
+else
+  rancher_command="rancher/server:$rancher_server_version" 
+fi
 
 echo Installing Rancher Server
 sudo docker run -d --restart=always \
@@ -69,9 +77,10 @@ sudo docker run -d --restart=always \
  -p 9345:9345 \
  $EXTRA_OPTS \
  -e CATTLE_JAVA_OPTS="$CATTLE_JAVA_OPTS" \
+ $rancher_env_vars \
  --restart=unless-stopped \
  --name rancher-server \
- $registry_prefix/server:$rancher_server_version \
+ $rancher_command \
  --db-host $cache_ip \
  --db-port 3306 \
  --db-name cattle \
@@ -108,7 +117,7 @@ if [ $node -eq 1 ]; then
       -X POST \
       -H 'Accept: application/json' \
       -H 'Content-Type: application/json' \
-      -d '{"type":"setting","name":"registry.default","value":"172.22.101.100"}' \
+      -d '{"type":"setting","name":"registry.default","value":"'$cache_ip':5000"}' \
         "$protocol://$rancher_server_ip/v2-beta/setting"
 
 fi

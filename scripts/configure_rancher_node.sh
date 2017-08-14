@@ -18,6 +18,12 @@ if [ "$network_type" == "airgap" ] ; then
   curlprefix="$cache_ip:5000"
 fi
 
+if [ "$orchestrator" == "kubernetes" ] && [ ! "$(ros engine list | grep current | grep docker-1.12.6)" ]; then
+  ros engine switch docker-1.12.6
+  system-docker restart docker
+  sleep 5
+fi
+
 ros config set rancher.docker.insecure_registry "['$cache_ip:5000']"
 if [ ! "$network_type" == "airgap" ] ; then
   ros config set rancher.docker.registry_mirror "http://$cache_ip:4000"
@@ -53,13 +59,6 @@ Z/nsoi16UmSJXKkJzXA+tM6K5DCx1p4LmuZXSzB5EwkL9okqA903Vj6kv9JwaHJl
 4IgQPgzN0f5iPZNsMboEFfhcYVRRYoznnJzL7VCg1ig5j9JyfsjSpozVFE2CY/52
 tRubyXjH+dQQftBUuzwULwwKGL0le7o/vA==
 -----END CERTIFICATE-----" > /var/lib/rancher/etc/ssl/ca.crt
-fi
-
-
-if [ "$orchestrator" == "kubernetes" ] && [ ! "$(ros engine list | grep current | grep docker-1.12.6)" ]; then
-  ros engine switch docker-1.12.6
-  system-docker restart docker
-  sleep 5
 fi
 
 if [ "$network_type" == "isolated" ] || [ "$network_type" == "airgap" ] ; then
@@ -102,19 +101,6 @@ docker run \
     -d "{\"type\":\"registrationToken\"}" \
       "$protocol://$rancher_server_ip/v2-beta/projects/$ENV_ID/registrationtoken"
 
-if [ "$network_type" == "airgap" ]; then
-docker run \
-  -v /tmp:/tmp \
-  --rm \
-  $curlprefix/curl \
-    -sLk \
-    "$protocol://$rancher_server_ip/v2-beta/projects/$ENV_ID/registrationtokens/?state=active" |
-      grep -Eo '[^,]*' |
-      grep -E 'command' |
-      awk '{gsub("\"command\":\"", ""); gsub("\"", ""); gsub(" rancher", " '$cache_ip':5000") ; print}' |
-      head -n1 |
-      sh
-else
 docker run \
   -v /tmp:/tmp \
   --rm \
@@ -126,4 +112,3 @@ docker run \
       awk '{gsub("\"command\":\"", ""); gsub("\"", ""); print}' |
       head -n1 |
       sh
-fi
