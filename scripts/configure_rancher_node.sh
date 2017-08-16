@@ -102,8 +102,6 @@ docker run \
   appropriate/curl \
     -sLk \
     "$protocol://$rancher_server_ip/v2-beta/projects/$ENV_ID/registrationtokens/?state=active" |
-      grep -Eo '[^,]*' |
-      grep -E 'command' |
-      awk '{gsub("\"command\":\"", ""); gsub("\"", ""); print}' |
+      jq -r .data[].command |
       head -n1 |
       sh
