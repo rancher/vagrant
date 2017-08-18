@@ -8,7 +8,7 @@ x = YAML.load_file('config.yaml')
 puts "Config: #{x.inspect}\n\n"
 
 $private_nic_type = x.fetch('net').fetch('private_nic_type')
-$external_ssh = x.fetch('net').fetch('external_ssh')
+$external_ssh = x.fetch('external_access').fetch('enabled')
 
 Vagrant.configure(2) do |config|
 
