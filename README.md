@@ -27,9 +27,11 @@ The config.yml contains any variables that you should need to change, below is a
 
 This sets the orchestrator that will be used for the environment, as part of the process the Default environment is deleted and we create a new one with the name of the orchestrator. 
 
-**isolated** - Possible values are `true` and `false`
+**network_mode** - Possible values are `isolated`, `airgap` and `normal`
 
-This sets the Rancher Server and Rancher nodes to have no external internet access other than via a proxy server that runs on the master node. This is used to emulate environments where a proxy server is required to access the internet
+`isolated` set the Rancher Server and Rancher nodes to have no external internet access other than via a proxy server that runs on the master node. This is used to emulate environments where a proxy server is required to access the internet
+
+`airgap` sets the Rancher Server and nodes to have no external access at all. All images required to stand up Rancher are downloaded to a private repo on master and pulled from there
 
 **sslenabled** - Possible values are `true` and `false`
 
@@ -42,6 +44,10 @@ The setting for this needs to match the string that is stored in the SSL certifi
 **version** - Possible values `latest`, `stable`, `v1.x.x` where x.x is any release of Rancher Server
 
 This is the version of Rancher Server that you want to be deployed into you environment
+
+**agent_version** - The version of the Rancher agent for the nodes to pull
+
+**ROS_version** - The version of RancherOS for the nodes to run, possible values are `1.0.3` and `1.0.4`
 
 **master** - Settings for the master node that runs the proxy, registry mirror etc, this value should not be changed
 
@@ -77,22 +83,28 @@ This is the version of Rancher Server that you want to be deployed into you envi
 
 **net** - Network Settings section, this should not be changed
 
-**private_nic_type** - Default `82545EM` this sometime needs to be changed to `82540EM` This is the network card that is emulated in the virtual machine
-
-**external_ssh** - Default value `false`, Change to true if you want to expose the master node to an external network
-
-**external_port** - Default value `2277`, this is the port that the master node will be exposed on if you enabled *external\_ssh*
+**private\_nic\_type** - Default `82545EM` this sometime needs to be changed to `82540EM` This is the network card that is emulated in the virtual machine
 
 **network\_type** - Default **private\_network**
 
 If you wnat to expose the Virtual Machines directly to the network this can be set to **public_network**
 
-**keys** - Subsection fot defining keys to be used when enabling *external_ssh*. The public key will be placed onto all servers, the private key will be placed onto just the master node. You can then use the master node as a jump host to each of the remaining VM's, or access them directly with the ssh key
+**keys** - Subsection for defining keys to be used when enabling *external_ssh*. The public key will be placed onto all servers, the private key will be placed onto just the master node. You can then use the master node as a jump host to each of the remaining VM's, or access them directly with the ssh key
 
 **public_key** - This should be set to the path of the public key that needs to be uploaded
 
 **private_key** - This should be set to the path of the private key that needs to be uploaded
 
+**external_access** - To expose the setup to an external network
+
+**enabled** - Default value `false`, Change to true if you want to expose the master node to an external network`
+
+**ssh_port** - Default value `2277`, this is the port that the master node will be exposed on if you enabled *external\_ssh*
+
+**http_port** - set this value to the local port on the host to forward to port 80 on the master
+
+**https_port** - set this value to the local port on the host to forward to port 443 on the master
+
 ## Troubleshooting
 
-*VM's not starting but not running any scripts* - Try changing the *private_nic_type*
+**VM's starting but not running any scripts** - Try changing the *private\_nic\_type*

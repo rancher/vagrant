@@ -1,7 +1,7 @@
 # cattle|kubernetes|swarm|mesos
 orchestrator: cattle
 # 'true'|'false' isolated network requiring proxy. must be in ''
-network_mode: airgap
+network_mode: normal
 # 'true'|'false'
 sslenabled: 'false'
 ssldns: 'server.rancher.vagrant'
@@ -34,17 +34,13 @@ ip:
 linked_clones: true
 net:
   private_nic_type: 82545EM
-  external_80: 80
-  external_443: 443
-  external_ssh: false
-  external_port: 2277
   network_type: private_network
 # Location of ssh key files that want to be added to the servers
 keys:
   public_key: ""
   private_key: ""
 external_access:
-  enabled: true
+  enabled: false
   ssh_port: 2277 
   http_port: 80
   https_port: 443
