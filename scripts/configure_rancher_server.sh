@@ -4,10 +4,18 @@ rancher_server_ip=${1:-172.22.101.100}
 orchestrator=${2:-cattle}
 node=${3:-3}
 rancher_server_version=${4:-stable}
-isolated=${5:-false}
+network_type=${5:-false}
 sslenabled=${6:-false}
 ssldns=${7:-server.rancher.vagrant}
 cache_ip=${8:-172.22.101.100}
+rancher_env_vars=${9}
+registry_prefix="rancher"
+curl_prefix="appropriate"
+
+if [ "$network_type" == "airgap" ]; then
+   registry_prefix=$cache_ip:5000
+   curl_prefix=$cache_ip:5000
+fi
 
 if [ "$sslenabled" == 'true' ]; then
   protocol="https"
@@ -16,19 +24,21 @@ else
   protocol="http"
 fi
 
-if [ ! "$(ps -ef | grep dockerd | grep -v grep | grep "$cache_ip")" ]; then
+ros config set rancher.docker.insecure_registry "['$cache_ip:5000']"
+if [ ! "$network_type" == "airgap" ] ; then
   ros config set rancher.docker.registry_mirror "http://$cache_ip:4000"
   ros config set rancher.system_docker.registry_mirror "http://$cache_ip:4000"
   ros config set rancher.docker.host "['unix:///var/run/docker.sock', 'tcp://0.0.0.0:2375']"
-  if [ "$isolated" == 'true' ]; then
+  if [ "$network_type" == "isolated" ]; then
     ros config set rancher.docker.environment "['http_proxy=http://$cache_ip:3128','https_proxy=http://$cache_ip:3128','HTTP_PROXY=http://$cache_ip:3128','HTTPS_PROXY=http://$cache_ip:3128','no_proxy=server.rancher.vagrant,localhost,127.0.0.1','NO_PROXY=server.rancher.vagrant,localhost,127.0.0.1']"
     ros config set rancher.system_docker.environment "['http_proxy=http://$cache_ip:3128','https_proxy=http://$cache_ip:3128','HTTP_PROXY=http://$cache_ip:3128','HTTPS_PROXY=http://$cache_ip:3128','no_proxy=server.rancher.vagrant,localhost,127.0.0.1','NO_PROXY=server.rancher.vagrant,localhost,127.0.0.1']"
-  fi  
-  system-docker restart docker
-  sleep 5
+  fi
 fi
 
-if [ "$isolated" == 'true' ]; then
+system-docker restart docker
+sleep 5
+
+if [ "$network_type" == "isolated" ] || [ "$network_type" == "airgap" ] ; then
   ros config set rancher.network.dns.nameservers ["'$cache_ip'"]
   system-docker restart network
   route add default gw $cache_ip
@@ -43,13 +53,20 @@ SUSPEND=n
 CATTLE_JAVA_OPTS="-Xms128m -Xmx1g -XX:+HeapDumpOnOutOfMemoryError -agentlib:jdwp=transport=dt_socket,server=y,suspend=$SUSPEND,address=1044"
 
 EXTRA_OPTS=""
-if [ "$isolated" == 'true' ]; then
+if [ "$network_type" == "isolated" ]; then
   EXTRA_OPTS="-e http_proxy='http://$cache_ip:3128' \
  -e https_proxy='http://$cache_ip:3128' \
  -e HTTP_PROXY='http://$cache_ip:3128' \
  -e HTTPS_PROXY='http://$cache_ip:3128' \
  -e no_proxy='server.rancher.vagrant,localhost,127.0.0.1' \
  -e NO_PROXY='server.rancher.vagrant,localhost,127.0.0.1'"
+fi
+rancher_command=""
+if [ "$network_type" == "airgap" ]; then
+  EXTRA_OPTS="-e CATTLE_BOOTSTRAP_REQUIRED_IMAGE=$cache_ip:5000/rancher/agent:v1.2.5"
+  rancher_command="$registry_prefix/rancher/server:$rancher_server_version" 
+else
+  rancher_command="rancher/server:$rancher_server_version" 
 fi
 
 echo Installing Rancher Server
@@ -60,9 +77,10 @@ sudo docker run -d --restart=always \
  -p 9345:9345 \
  $EXTRA_OPTS \
  -e CATTLE_JAVA_OPTS="$CATTLE_JAVA_OPTS" \
+ $rancher_env_vars \
  --restart=unless-stopped \
  --name rancher-server \
- rancher/server:$rancher_server_version \
+ $rancher_command \
  --db-host $cache_ip \
  --db-port 3306 \
  --db-name cattle \
@@ -82,7 +100,7 @@ if [ $node -eq 1 ]; then
   # disable telemetry for developers
  docker run \
     --rm \
-    appropriate/curl \
+    $curl_prefix/curl \
       -sLk \
       -X POST \
       -H 'Accept: application/json' \
@@ -90,13 +108,26 @@ if [ $node -eq 1 ]; then
       -d '{"type":"setting","name":"telemetry.opt","value":"out"}' \
         "$protocol://$rancher_server_ip/v2-beta/setting"
 
+ # set default registry for Rancher images
+ if [ "$network_type" == "airgap" ] ; then
+ docker run \
+    --rm \
+    $curl_prefix/curl \
+      -sLk \
+      -X POST \
+      -H 'Accept: application/json' \
+      -H 'Content-Type: application/json' \
+      -d '{"type":"setting","name":"registry.default","value":"'$cache_ip':5000"}' \
+        "$protocol://$rancher_server_ip/v2-beta/setting"
+
+fi
 
 # lookup orchestrator template id
 while true; do
   ENV_TEMPLATE_ID=$(docker run \
     -v /tmp:/tmp \
     --rm \
-    appropriate/curl \
+    $curl_prefix/curl \
       -sLk \
         "$protocol://$rancher_server_ip/v2-beta/projectTemplates?name=$orchestrator" | jq '.data[0].id' | tr -d '"')
 
@@ -112,7 +143,7 @@ done
 docker run \
   -v /tmp:/tmp \
   --rm \
-  appropriate/curl \
+  $curl_prefix/curl \
     -sLk \
     -X POST \
     -H 'Accept: application/json' \
@@ -121,12 +152,12 @@ docker run \
       "$protocol://$rancher_server_ip/v2-beta/projects"
 
 # lookup default environment id
-DEFAULT_ENV_ID=$(docker run -v /tmp:/tmp --rm appropriate/curl -sLk "$protocol://$rancher_server_ip/v2-beta/project?name=Default" | jq '.data[0].id' | tr -d '"')
+DEFAULT_ENV_ID=$(docker run -v /tmp:/tmp --rm $curl_prefix/curl -sLk "$protocol://$rancher_server_ip/v2-beta/project?name=Default" | jq '.data[0].id' | tr -d '"')
 
 # delete default environment
 docker run \
   --rm \
-  appropriate/curl \
+  $curl_prefix/curl \
     -sLk \
     -X DELETE \
     -H 'Accept: application/json' \

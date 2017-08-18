@@ -1,12 +1,16 @@
 # cattle|kubernetes|swarm|mesos
 orchestrator: cattle
 # 'true'|'false' isolated network requiring proxy. must be in ''
-isolated: 'false' 
+network_mode: normal
 # 'true'|'false'
 sslenabled: 'false'
 ssldns: 'server.rancher.vagrant'
 # https://hub.docker.com/r/rancher/server/tags/
 version: latest
+#Pass through environment variables for Rancher Server to start with
+rancher_env_vars: ""
+agent_version: "v1.2.5"
+ROS_version: 1.0.3
 master:
   cpus: 1
   memory: 1024
@@ -30,10 +34,13 @@ ip:
 linked_clones: true
 net:
   private_nic_type: 82545EM
-  external_ssh: false
-  external_port: 2277
   network_type: private_network
 # Location of ssh key files that want to be added to the servers
 keys:
   public_key: ""
   private_key: ""
+external_access:
+  enabled: false
+  ssh_port: 2277 
+  http_port: 80
+  https_port: 443
