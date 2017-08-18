@@ -45,6 +45,8 @@ The setting for this needs to match the string that is stored in the SSL certifi
 
 This is the version of Rancher Server that you want to be deployed into you environment
 
+**rancher\_env\_vars** - Pass through additional environment variables to the Rancher server
+
 **agent_version** - The version of the Rancher agent for the nodes to pull
 
 **ROS_version** - The version of RancherOS for the nodes to run, possible values are `1.0.3` and `1.0.4`
