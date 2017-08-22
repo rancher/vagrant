@@ -8,10 +8,10 @@ x = YAML.load_file('config.yaml')
 puts "Config: #{x.inspect}\n\n"
 
 $private_nic_type = x.fetch('net').fetch('private_nic_type')
-$external_ssh = x.fetch('net').fetch('external_ssh')
+$external_ssh = x.fetch('external_access').fetch('enabled')
 
 Vagrant.configure(2) do |config|
-
+config.vm.communicator = "ssh"
   config.vm.define "master" do |master|
     c = x.fetch('master')
     master.vm.box = "williamyeh/ubuntu-trusty64-docker"
@@ -49,6 +49,7 @@ Vagrant.configure(2) do |config|
   server_ip = IPAddr.new(x.fetch('ip').fetch('server'))
   (1..x.fetch('server').fetch('count')).each do |i|
     c = x.fetch('server')
+    config.vm.communicator = "ssh"
     hostname = "server-%02d" % i
     config.vm.define hostname do |server|
       server.vm.box= "chrisurwin/RancherOS"
@@ -79,9 +80,11 @@ Vagrant.configure(2) do |config|
       end
   end
 
+  if  (x.fetch('orchestrator') != "windows")
   node_ip = IPAddr.new(x.fetch('ip').fetch('node'))
   (1..x.fetch('node').fetch('count')).each do |i|
     c = x.fetch('node')
+    config.vm.communicator = "ssh"
     hostname = "node-%02d" % i
     config.vm.define hostname do |node|
       node.vm.box   = "chrisurwin/RancherOS"
@@ -111,5 +114,22 @@ Vagrant.configure(2) do |config|
         end
     end
   end
-
+  else
+    node_ip = IPAddr.new(x.fetch('ip').fetch('node'))
+    (1..x.fetch('node').fetch('count')).each do |i|
+      c = x.fetch('node')
+      hostname = "win-node-%02d" % i
+      config.vm.define hostname do |node|
+        node.vm.network x.fetch('net').fetch('network_type'), ip: IPAddr.new(node_ip.to_i + i - 1, Socket::AF_INET).to_s, nic_type: $private_nic_type
+        node.vm.communicator = "winrm"
+        node.vm.box   = "chrisurwin/rancher-nano"
+        node.vm.guest = :windows
+        node.vm.hostname = hostname
+        node.vm.provision "file", source: "register.ps1", destination: "c:\\Users\\vagrant\\Documents\\register.ps1"
+#        node.vm.provision "shell", inline: "New-NetIPAddress -InterfaceAlias \"Ethernet 2\" " + IPAddr.new(node_ip.to_i + i - 1, Socket::AF_INET).to_s + " -PrefixLength 24;$id=Invoke-RestMethod http://172.22.101.100/v2-beta/project?name=windows -Headers @{\"accept\"=\"application/json\"} | select -expand data | select -ExpandProperty id; echo $id;$regUrl = Invoke-RestMethod -Uri http://172.22.101.100/v2-beta/projects/$id/registrationtoken -Body @{\"type\"=\"registrationToken\"} -ContentType application/json -Headers @{\"accept\"=\"application/json\"} |select -expand data | select -ExpandProperty registrationUrl | select -First 1;echo \"RegUrl:\" $regUrl; . 'C:\\Program Files\\rancher\\agent.exe' --register-service $regUrl; Echo \"Service Registered\";rename-computer -computername . -newname " + hostname + ";shutdown /r /t 0" #Start-Service rancher-agent"
+        #node.vm.provision "shell", inline: "New-NetIPAddress -InterfaceAlias \"Ethernet 2\" " + IPAddr.new(node_ip.to_i + i - 1, Socket::AF_INET).to_s + " -PrefixLength 24;$id=Invoke-RestMethod http://172.22.101.100/v2-beta/project?name=windows -Headers @{\"accept\"=\"application/json\"} | select -expand data | select -ExpandProperty id; echo $id;$regUrl = Invoke-RestMethod -Uri http://172.22.101.100/v2-beta/projects/$id/registrationtoken -Body @{\"type\"=\"registrationToken\"} -ContentType application/json -Headers @{\"accept\"=\"application/json\"} |select -expand data | select -ExpandProperty registrationUrl | select -First 1;echo \"RegUrl:\" $regUrl; echo \". 'C:\\Program Files\\rancher\\agent.exe' --register-service $regUrl\" >> c:\windows\temp\service.cmd; echo \"Restart-Service rancher-agent\" >> c:\windows\temp\service.cmd;echo \"schtasks /delete /tn \"Register\" /f 2>&1 >> c:\log.txt\";schtasks /create /tn \"Register\" /tr c:\windows\temp\service.cmd /sc onstart 2>&1 >> c:\log.txt; rename-computer -computername . -newname " + hostname + ";shutdown /r /t 0" #Start-Service rancher-agent"
+        node.vm.provision "shell", inline: "c:\\Users\\vagrant\\Documents\\register.ps1 "+ IPAddr.new(node_ip.to_i + i - 1, Socket::AF_INET).to_s + " " + x.fetch('ip').fetch('master') + " " + hostname
+      end
+    end  
+  end
 end

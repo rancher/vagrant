@@ -165,3 +165,17 @@ docker run \
     -d '{}' \
       "$protocol://$rancher_server_ip/v2-beta/projects/$DEFAULT_ENV_ID/?action=delete"
 fi
+
+# lookup default environment id
+ORCH_ENV_ID=$(docker run -v /tmp:/tmp --rm $curl_prefix/curl -sLk "$protocol://$rancher_server_ip/v2-beta/project?name=$orchestrator" | jq '.data[0].id' | tr -d '"')
+
+docker run \
+  -v /tmp:/tmp \
+  --rm \
+  $curl_prefix/curl \
+    -sLk \
+    -X POST \
+    -H 'Content-Type: application/json' \
+    -H 'accept: application/json' \
+    -d "{\"type\":\"registrationToken\"}" \
+      "$protocol://$rancher_server_ip/v2-beta/projects/$ORCH_ENV_ID/registrationtoken"
