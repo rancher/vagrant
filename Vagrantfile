@@ -63,7 +63,7 @@ config.vm.communicator = "ssh"
       end
       server.vm.network x.fetch('net').fetch('network_type'), ip: IPAddr.new(server_ip.to_i + i - 1, Socket::AF_INET).to_s, nic_type: $private_nic_type
       server.vm.hostname = hostname
-      server.vm.provision "shell", path: "scripts/configure_rancher_server.sh", args: [x.fetch('ip').fetch('master'), x.fetch('orchestrator'), i, x.fetch('version'), x.fetch('network_mode'), x.fetch('sslenabled'), x.fetch('ssldns'), x.fetch('ip').fetch('master'), x.fetch('rancher_env_vars')]
+      server.vm.provision "shell", path: "scripts/configure_rancher_server.sh", args: [x.fetch('ip').fetch('master'), x.fetch('orchestrator'), i, x.fetch('image'), x.fetch('network_mode'), x.fetch('sslenabled'), x.fetch('ssldns'), x.fetch('ip').fetch('master'), x.fetch('rancher_env_vars')]
       if File.file?(x.fetch('keys').fetch('private_key'))
         config.vm.provision "file", source: x.fetch('keys').fetch('private_key'), destination: "/home/rancher/.ssh/id_rsa"
       end
@@ -80,12 +80,11 @@ config.vm.communicator = "ssh"
       end
   end
 
-  if  (x.fetch('orchestrator') != "windows")
-  node_ip = IPAddr.new(x.fetch('ip').fetch('node'))
-  (1..x.fetch('node').fetch('count')).each do |i|
-    c = x.fetch('node')
+  linux_node_ip = IPAddr.new(x.fetch('ip').fetch('linux_node'))
+  (1..x.fetch('linux-node').fetch('count')).each do |i|
+    c = x.fetch('linux-node')
     config.vm.communicator = "ssh"
-    hostname = "node-%02d" % i
+    hostname = "linux-node-%02d" % i
     config.vm.define hostname do |node|
       node.vm.box   = "chrisurwin/RancherOS"
       node.vm.box_version = x.fetch('ROS_version')
@@ -96,7 +95,7 @@ config.vm.communicator = "ssh"
         v.memory = c.fetch('memory')
         v.name = hostname
       end
-      node.vm.network x.fetch('net').fetch('network_type'), ip: IPAddr.new(node_ip.to_i + i - 1, Socket::AF_INET).to_s, nic_type: $private_nic_type
+      node.vm.network x.fetch('net').fetch('network_type'), ip: IPAddr.new(linux_node_ip.to_i + i - 1, Socket::AF_INET).to_s, nic_type: $private_nic_type
       node.vm.hostname = hostname
       node.vm.provision "shell", path: "scripts/configure_rancher_node.sh", args: [x.fetch('ip').fetch('master'), x.fetch('orchestrator'), x.fetch('network_mode'), x.fetch('sslenabled'), x.fetch('ssldns'), x.fetch('ip').fetch('master')]
       if File.file?(x.fetch('keys').fetch('private_key'))
@@ -114,22 +113,28 @@ config.vm.communicator = "ssh"
         end
     end
   end
-  else
-    node_ip = IPAddr.new(x.fetch('ip').fetch('node'))
-    (1..x.fetch('node').fetch('count')).each do |i|
-      c = x.fetch('node')
-      hostname = "win-node-%02d" % i
-      config.vm.define hostname do |node|
-        node.vm.network x.fetch('net').fetch('network_type'), ip: IPAddr.new(node_ip.to_i + i - 1, Socket::AF_INET).to_s, nic_type: $private_nic_type
-        node.vm.communicator = "winrm"
-        node.vm.box   = "chrisurwin/rancher-nano"
-        node.vm.guest = :windows
-        node.vm.hostname = hostname
-        node.vm.provision "file", source: "register.ps1", destination: "c:\\Users\\vagrant\\Documents\\register.ps1"
-#        node.vm.provision "shell", inline: "New-NetIPAddress -InterfaceAlias \"Ethernet 2\" " + IPAddr.new(node_ip.to_i + i - 1, Socket::AF_INET).to_s + " -PrefixLength 24;$id=Invoke-RestMethod http://172.22.101.100/v2-beta/project?name=windows -Headers @{\"accept\"=\"application/json\"} | select -expand data | select -ExpandProperty id; echo $id;$regUrl = Invoke-RestMethod -Uri http://172.22.101.100/v2-beta/projects/$id/registrationtoken -Body @{\"type\"=\"registrationToken\"} -ContentType application/json -Headers @{\"accept\"=\"application/json\"} |select -expand data | select -ExpandProperty registrationUrl | select -First 1;echo \"RegUrl:\" $regUrl; . 'C:\\Program Files\\rancher\\agent.exe' --register-service $regUrl; Echo \"Service Registered\";rename-computer -computername . -newname " + hostname + ";shutdown /r /t 0" #Start-Service rancher-agent"
-        #node.vm.provision "shell", inline: "New-NetIPAddress -InterfaceAlias \"Ethernet 2\" " + IPAddr.new(node_ip.to_i + i - 1, Socket::AF_INET).to_s + " -PrefixLength 24;$id=Invoke-RestMethod http://172.22.101.100/v2-beta/project?name=windows -Headers @{\"accept\"=\"application/json\"} | select -expand data | select -ExpandProperty id; echo $id;$regUrl = Invoke-RestMethod -Uri http://172.22.101.100/v2-beta/projects/$id/registrationtoken -Body @{\"type\"=\"registrationToken\"} -ContentType application/json -Headers @{\"accept\"=\"application/json\"} |select -expand data | select -ExpandProperty registrationUrl | select -First 1;echo \"RegUrl:\" $regUrl; echo \". 'C:\\Program Files\\rancher\\agent.exe' --register-service $regUrl\" >> c:\windows\temp\service.cmd; echo \"Restart-Service rancher-agent\" >> c:\windows\temp\service.cmd;echo \"schtasks /delete /tn \"Register\" /f 2>&1 >> c:\log.txt\";schtasks /create /tn \"Register\" /tr c:\windows\temp\service.cmd /sc onstart 2>&1 >> c:\log.txt; rename-computer -computername . -newname " + hostname + ";shutdown /r /t 0" #Start-Service rancher-agent"
-        node.vm.provision "shell", inline: "c:\\Users\\vagrant\\Documents\\register.ps1 "+ IPAddr.new(node_ip.to_i + i - 1, Socket::AF_INET).to_s + " " + x.fetch('ip').fetch('master') + " " + hostname
+
+  windows_node_ip = IPAddr.new(x.fetch('ip').fetch('windows_node'))
+  (1..x.fetch('windows-node').fetch('count')).each do |i|
+    c = x.fetch('windows-node')
+    hostname = "windows-node-%02d" % i
+    config.vm.define hostname do |node|
+      node.vm.network x.fetch('net').fetch('network_type'), ip: IPAddr.new(windows_node_ip.to_i + i - 1, Socket::AF_INET).to_s, nic_type: $private_nic_type
+      node.vm.communicator = "winrm"
+      node.vm.box   = "chrisurwin/rancher-nano"
+      node.vm.guest = :windows
+      node.vm.provider "virtualbox" do |v|
+        v.cpus = c.fetch('cpus')
+        v.linked_clone = true if Gem::Version.new(Vagrant::VERSION) >= Gem::Version.new('1.8.0') and x.fetch('linked_clones')
+        v.memory = c.fetch('memory')
+        v.name = hostname
       end
-    end  
-  end
+      node.vm.hostname = hostname
+      node.vm.provision "file", source: "register.ps1", destination: "c:\\Users\\vagrant\\Documents\\register.ps1"
+#        node.vm.provision "shell", inline: "New-NetIPAddress -InterfaceAlias \"Ethernet 2\" " + IPAddr.new(windows_node_ip.to_i + i - 1, Socket::AF_INET).to_s + " -PrefixLength 24;$id=Invoke-RestMethod http://172.22.101.100/v2-beta/project?name=windows -Headers @{\"accept\"=\"application/json\"} | select -expand data | select -ExpandProperty id; echo $id;$regUrl = Invoke-RestMethod -Uri http://172.22.101.100/v2-beta/projects/$id/registrationtoken -Body @{\"type\"=\"registrationToken\"} -ContentType application/json -Headers @{\"accept\"=\"application/json\"} |select -expand data | select -ExpandProperty registrationUrl | select -First 1;echo \"RegUrl:\" $regUrl; . 'C:\\Program Files\\rancher\\agent.exe' --register-service $regUrl; Echo \"Service Registered\";rename-computer -computername . -newname " + hostname + ";shutdown /r /t 0" #Start-Service rancher-agent"
+      #node.vm.provision "shell", inline: "New-NetIPAddress -InterfaceAlias \"Ethernet 2\" " + IPAddr.new(windows_node_ip.to_i + i - 1, Socket::AF_INET).to_s + " -PrefixLength 24;$id=Invoke-RestMethod http://172.22.101.100/v2-beta/project?name=windows -Headers @{\"accept\"=\"application/json\"} | select -expand data | select -ExpandProperty id; echo $id;$regUrl = Invoke-RestMethod -Uri http://172.22.101.100/v2-beta/projects/$id/registrationtoken -Body @{\"type\"=\"registrationToken\"} -ContentType application/json -Headers @{\"accept\"=\"application/json\"} |select -expand data | select -ExpandProperty registrationUrl | select -First 1;echo \"RegUrl:\" $regUrl; echo \". 'C:\\Program Files\\rancher\\agent.exe' --register-service $regUrl\" >> c:\windows\temp\service.cmd; echo \"Restart-Service rancher-agent\" >> c:\windows\temp\service.cmd;echo \"schtasks /delete /tn \"Register\" /f 2>&1 >> c:\log.txt\";schtasks /create /tn \"Register\" /tr c:\windows\temp\service.cmd /sc onstart 2>&1 >> c:\log.txt; rename-computer -computername . -newname " + hostname + ";shutdown /r /t 0" #Start-Service rancher-agent"
+      node.vm.provision "shell", inline: "netsh advfirewall firewall add rule name='Swarm Peer' dir=in action=allow protocol=tcp localport=2377; netsh advfirewall firewall add rule name='Swarm Network Discovery TCP' dir=in action=allow protocol=tcp localport=7946; netsh advfirewall firewall add rule name='Swarm Network Discovery UDP' dir=in action=allow protocol=udp localport=7946; netsh advfirewall firewall add rule name='Swarm Overlay Network' dir=in action=allow protocol=udp localport=4789"
+      node.vm.provision "shell", inline: "c:\\Users\\vagrant\\Documents\\register.ps1 "+ IPAddr.new(windows_node_ip.to_i + i - 1, Socket::AF_INET).to_s + " " + x.fetch('ip').fetch('master') + " " + x.fetch('orchestrator') + " " + hostname
+    end
+  end  
 end

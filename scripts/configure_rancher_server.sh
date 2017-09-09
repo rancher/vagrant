@@ -3,7 +3,7 @@
 rancher_server_ip=${1:-172.22.101.100}
 orchestrator=${2:-cattle}
 node=${3:-3}
-rancher_server_version=${4:-stable}
+rancher_server_image=${4:-"rancher/server:stable"}
 network_type=${5:-false}
 sslenabled=${6:-false}
 ssldns=${7:-server.rancher.vagrant}
@@ -64,9 +64,9 @@ fi
 rancher_command=""
 if [ "$network_type" == "airgap" ]; then
   EXTRA_OPTS="-e CATTLE_BOOTSTRAP_REQUIRED_IMAGE=$cache_ip:5000/rancher/agent:v1.2.5"
-  rancher_command="$registry_prefix/rancher/server:$rancher_server_version" 
+  rancher_command="$registry_prefix/$rancher_server_image"
 else
-  rancher_command="rancher/server:$rancher_server_version" 
+  rancher_command="$rancher_server_image"
 fi
 
 echo Installing Rancher Server
