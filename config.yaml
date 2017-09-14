@@ -20,13 +20,13 @@ server:
   cpus: 1
   memory: 2048
 linux-node:
-  count: 3
-  cpus: 1
-  memory: 1536
-windows-node:
   count: 0
   cpus: 1
-  memory: 1536
+  memory: 1024
+windows-node:
+  count: 3
+  cpus: 1
+  memory: 1024
 ip:
   master: 172.22.101.100
   server: 172.22.101.101
