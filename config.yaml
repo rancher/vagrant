@@ -1,14 +1,14 @@
 # cattle|kubernetes|swarm|mesos
-orchestrator: cattle
+orchestrator: kubernetes
 # 'true'|'false' isolated network requiring proxy. must be in ''
 network_mode: normal
 # 'true'|'false'
 sslenabled: 'false'
 ssldns: 'server.rancher.vagrant'
 # https://hub.docker.com/r/rancher/server/tags/
-version: latest
+version: v2.0.0-alpha2
 #Pass through environment variables for Rancher Server to start with
-rancher_env_vars: ""
+rancher_env_vars: "-v /var/run/docker.sock:/var/run/docker.sock"
 agent_version: "v1.2.5"
 ROS_version: 1.0.3
 master:
@@ -17,9 +17,9 @@ master:
 server:
   count: 1
   cpus: 1
-  memory: 2048
+  memory: 4096
 node:
-  count: 3
+  count: 2
   cpus: 1
   memory: 2048
 ip:

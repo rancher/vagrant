@@ -34,7 +34,7 @@ if [ ! "$network_type" == "airgap" ] ; then
     ros config set rancher.system_docker.environment "['http_proxy=http://$cache_ip:3128','https_proxy=http://$cache_ip:3128','HTTP_PROXY=http://$cache_ip:3128','HTTPS_PROXY=http://$cache_ip:3128','no_proxy=server.rancher.vagrant,localhost,127.0.0.1','NO_PROXY=server.rancher.vagrant,localhost,127.0.0.1']"
   fi
 fi
-
+  ros engine switch docker-1.12.6
 system-docker restart docker
 sleep 5
 
@@ -106,7 +106,7 @@ if [ $node -eq 1 ]; then
       -H 'Accept: application/json' \
       -H 'Content-Type: application/json' \
       -d '{"type":"setting","name":"telemetry.opt","value":"out"}' \
-        "$protocol://$rancher_server_ip/v2-beta/setting"
+        "$protocol://$rancher_server_ip/v3/setting"
 
  # set default registry for Rancher images
  if [ "$network_type" == "airgap" ] ; then
@@ -118,50 +118,7 @@ if [ $node -eq 1 ]; then
       -H 'Accept: application/json' \
       -H 'Content-Type: application/json' \
       -d '{"type":"setting","name":"registry.default","value":"'$cache_ip':5000"}' \
-        "$protocol://$rancher_server_ip/v2-beta/setting"
+        "$protocol://$rancher_server_ip/v3/setting"
 
 fi
-
-# lookup orchestrator template id
-while true; do
-  ENV_TEMPLATE_ID=$(docker run \
-    -v /tmp:/tmp \
-    --rm \
-    $curl_prefix/curl \
-      -sLk \
-        "$protocol://$rancher_server_ip/v2-beta/projectTemplates?name=$orchestrator" | jq '.data[0].id' | tr -d '"')
-
-  # might've received 422 InvalidReference if the templates haven't populated yet
-  if [[ "$ENV_TEMPLATE_ID" == 1pt* ]]; then
-    break
-  else
-    sleep 5
-  fi
-done
-
-# create an environment with specified orchestrator template
-docker run \
-  -v /tmp:/tmp \
-  --rm \
-  $curl_prefix/curl \
-    -sLk \
-    -X POST \
-    -H 'Accept: application/json' \
-    -H 'Content-Type: application/json' \
-    -d "{\"description\":\"$orchestrator\",\"name\":\"$orchestrator\",\"projectTemplateId\":\"$ENV_TEMPLATE_ID\",\"allowSystemRole\":false,\"members\":[],\"virtualMachine\":false,\"servicesPortRange\":null}" \
-      "$protocol://$rancher_server_ip/v2-beta/projects"
-
-# lookup default environment id
-DEFAULT_ENV_ID=$(docker run -v /tmp:/tmp --rm $curl_prefix/curl -sLk "$protocol://$rancher_server_ip/v2-beta/project?name=Default" | jq '.data[0].id' | tr -d '"')
-
-# delete default environment
-docker run \
-  --rm \
-  $curl_prefix/curl \
-    -sLk \
-    -X DELETE \
-    -H 'Accept: application/json' \
-    -H 'Content-Type: application/json' \
-    -d '{}' \
-      "$protocol://$rancher_server_ip/v2-beta/projects/$DEFAULT_ENV_ID/?action=delete"
 fi

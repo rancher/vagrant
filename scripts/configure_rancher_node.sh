@@ -78,7 +78,7 @@ while true; do
     --rm \
     $curlprefix/curl \
       -sLk \
-      "$protocol://$rancher_server_ip/v2-beta/project?name=$orchestrator" | jq '.data[0].id' | tr -d '"')
+      "$protocol://$rancher_server_ip/v3/project?name=System" | jq '.data[0].id' | tr -d '"')
 
   if [[ "$ENV_ID" == 1a* ]]; then
     break
@@ -95,18 +95,7 @@ docker run \
   --rm \
   $curlprefix/curl \
     -sLk \
-    -X POST \
-    -H 'Content-Type: application/json' \
-    -H 'accept: application/json' \
-    -d "{\"type\":\"registrationToken\"}" \
-      "$protocol://$rancher_server_ip/v2-beta/projects/$ENV_ID/registrationtoken"
-
-docker run \
-  -v /tmp:/tmp \
-  --rm \
-  $curlprefix/curl \
-    -sLk \
-    "$protocol://$rancher_server_ip/v2-beta/projects/$ENV_ID/registrationtokens/?state=active" |
-      jq -r .data[].command |
+    "$protocol://$rancher_server_ip/v3/projects/$ENV_ID/clusters" |
+      jq -r .data[].registrationToken.hostCommand |
       head -n1 |
       sh
