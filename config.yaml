@@ -6,8 +6,8 @@ network_mode: normal
 sslenabled: 'false'
 ssldns: 'server.rancher.vagrant'
 # https://hub.docker.com/r/rancher/server/tags/
-image: llparse/server:v1.6.8-windows
-version: v1.6.8
+image: llparse/server:v1.6.9_windows
+version: v1.6.9
 #Pass through environment variables for Rancher Server to start with
 rancher_env_vars: ""
 agent_version: "v1.2.5"
@@ -20,11 +20,11 @@ server:
   cpus: 1
   memory: 2048
 linux-node:
-  count: 0
+  count: 1
   cpus: 1
   memory: 1024
 windows-node:
-  count: 3
+  count: 2
   cpus: 1
   memory: 1024
 ip:

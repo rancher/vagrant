@@ -121,8 +121,8 @@ config.vm.communicator = "ssh"
     config.vm.define hostname do |node|
       node.vm.network x.fetch('net').fetch('network_type'), ip: IPAddr.new(windows_node_ip.to_i + i - 1, Socket::AF_INET).to_s, nic_type: $private_nic_type
       node.vm.communicator = "winrm"
-      node.vm.box   = "chrisurwin/rancher-nano"
-      node.vm.box_version = "1.0.2"
+      node.vm.box   = "jamesoliver/windows2016rancher"
+#      node.vm.box_version = "1.0.3"
       node.vm.guest = :windows
       node.vm.provider "virtualbox" do |v|
         v.cpus = c.fetch('cpus')
@@ -131,8 +131,9 @@ config.vm.communicator = "ssh"
         v.name = hostname
       end
       # node.vm.hostname = hostname
-      node.vm.provision "file", source: "scripts/node-windows.ps1", destination: "c:\\Users\\vagrant\\Documents\\provision.ps1"
-      node.vm.provision "shell", inline: "c:\\Users\\vagrant\\Documents\\provision.ps1 "+ IPAddr.new(windows_node_ip.to_i + i - 1, Socket::AF_INET).to_s + " " + x.fetch('ip').fetch('master') + " " + x.fetch('orchestrator') + " " + hostname
+      node.vm.provision "shell", path: "scripts/node-windows.ps1", args: [IPAddr.new(windows_node_ip.to_i + i - 1, Socket::AF_INET).to_s, x.fetch('ip').fetch('master'), x.fetch('orchestrator'), hostname]
+      # node.vm.provision "file", source: "scripts/node-windows.ps1", destination: "c:\\Users\\vagrant\\Documents\\provision.ps1"
+      # node.vm.provision "shell", inline: "c:\\Users\\vagrant\\Documents\\provision.ps1 "+ IPAddr.new(windows_node_ip.to_i + i - 1, Socket::AF_INET).to_s + " " + x.fetch('ip').fetch('master') + " " + x.fetch('orchestrator') + " " + hostname
     end
   end  
 end
