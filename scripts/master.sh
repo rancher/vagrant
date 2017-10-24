@@ -20,6 +20,10 @@ service docker restart
 share_path=/vagrant/.vagrant/data
 mkdir -p $share_path
 
+# base configuration path
+config_path=/etc/vagrant/
+mkdir -p $config_path
+
 chmod 0700 /home/vagrant/.ssh/rancher_id
 chown vagrant /home/vagrant/.ssh/rancher_id
 
@@ -55,16 +59,34 @@ health:
     interval: 10s
     threshold: 3
 proxy:
-  remoteurl: https://registry-1.docker.io" > $share_path/config.yml
+  remoteurl: https://registry-1.docker.io" > $config_path/config.yml
 
 mkdir -p $share_path/redis
 echo "save 300 1
 requirepass \"$password\"" > $share_path/redis/redis.conf
 
+redis_image=redis_image.tar
+if [ -f $share_path/$redis_image ]; then
+  docker load -i $share_path/$redis_image
+fi
+
 docker run -d --restart=always --name redis-mirror -p 6379 -v $share_path/redis:/data --entrypoint=/usr/local/bin/redis-server redis /data/redis.conf
+
+if [ ! -f $share_path/$redis_image ] ; then
+  docker save -o $share_path/$redis_image redis
+fi
+
+registry_image=registry_v2_image.tar
+if [ -f $share_path/$registry_image ]; then
+  docker load -i $share_path/$registry_image
+fi
 
 docker run -d --restart=always -p 4000:5000 --name v2-mirror \
   -v $share_path:/var/lib/registry --link redis-mirror:redis registry:2 /var/lib/registry/config.yml
+
+if [ ! -f $share_path/$registry_image ] ; then
+  docker save -o $share_path/$registry_image registry:2
+fi
 
 # Allow for --provison to clean the cattle DB
 docker stop mysql
@@ -131,7 +153,7 @@ listen stats
     stats auth Username:Password
 
 backend ha-nodes
-   default-server inter 3s fall 3 rise 2" > $share_path/haproxy.cfg
+   default-server inter 3s fall 3 rise 2" > $config_path/haproxy.cfg
 
 nextip(){
     IP=$1
@@ -143,7 +165,7 @@ nextip(){
 
 IP=$rancher_server_ip
 for i in $(seq 1 $rancher_server_node); do
-    echo "   server ha-$i $IP:8080 check" >> $share_path/haproxy.cfg
+    echo "   server ha-$i $IP:8080 check" >> $config_path/haproxy.cfg
     IP=$(nextip $IP)
 done
 
@@ -155,20 +177,20 @@ frontend main
 	  redirect scheme https if !{ ssl_fc }
 	  bind 0.0.0.0:443 ssl crt /usr/local/etc/haproxy/haproxy.crt	
     reqadd X-Forwarded-Proto:\ https
-    default_backend ha-nodes" >> $share_path/haproxy.cfg
+    default_backend ha-nodes" >> $config_path/haproxy.cfg
 else
 echo "
 frontend main
     mode http
     bind 0.0.0.0:80
-    default_backend ha-nodes" >> $share_path/haproxy.cfg
+    default_backend ha-nodes" >> $config_path/haproxy.cfg
 fi
 
 docker stop haproxy
 docker rm haproxy
-docker run -d --name haproxy --restart=always -p 80:80 -p 443:443 -p 1936:1936 -v /vagrant/.vagrant/data/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro  -v /home/vagrant/haproxy.crt:/usr/local/etc/haproxy/haproxy.crt:ro haproxy:1.7
+docker run -d --name haproxy --restart=always -p 80:80 -p 443:443 -p 1936:1936 -v $config_path/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro  -v /home/vagrant/haproxy.crt:/usr/local/etc/haproxy/haproxy.crt:ro haproxy:1.7
 
-#docker run -d --name haproxy --restart=always -p 80:80 -p 443:443 -p 1936:1936 -v $share_path/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro haproxy:1.7
+#docker run -d --name haproxy --restart=always -p 80:80 -p 443:443 -p 1936:1936 -v $config_path/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro haproxy:1.7
 
 # Install nfs server
 sudo mkdir -p /home/vagrant/nfs
@@ -277,3 +299,8 @@ curl -Ss  "http://localhost:7070/images/$rancher_server_version" | jq -r '.image
     docker push $cache_ip:5000/curl
   fi
 fi
+
+# Mount /vagrant virtualbox filesystem on reboot
+echo "if [ -f /var/run/vboxadd-service.pid ]; then
+  mount -t vboxsf -o uid=900,gid=900,rw vagrant /vagrant
+fi" > /etc/rc.local
