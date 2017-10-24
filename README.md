@@ -53,59 +53,59 @@ This is the version of Rancher Server that you want to be deployed into your env
 
 **master** - Settings for the master node that runs the proxy, registry mirror etc., this value should not be changed
 
-**cpus** - Default `1` This is the number of vCPU's that the master node should have
+- **cpus** - Default `1` This is the number of vCPU's that the master node should have
 
-**memory** - Default `1024` This is the amount of RAM to be allocated to the master node, if running on a machine with only 8GB this should be dropped to `512`
+- **memory** - Default `1024` This is the amount of RAM to be allocated to the master node, if running on a machine with only 8GB this should be dropped to `512`
 
 **server** - Settings for the server node(s) that runs the Rancher Server, this value should not be changed
 
-**count** - Default `1` This is the number of Rancher Servers to run, if you want to test HA then this should be set to `2` or above
+- **count** - Default `1` This is the number of Rancher Servers to run, if you want to test HA then this should be set to `2` or above
 
-**cpus** - Default `1` This is the number of vCPU's that each server node should have
+- **cpus** - Default `1` This is the number of vCPU's that each server node should have
 
-**memory** - Default `2048` This is the amount of RAM to be allocated to each server node, if running on a machine with only 8GB this should be dropped to `1024`
+- **memory** - Default `2048` This is the amount of RAM to be allocated to each server node, if running on a machine with only 8GB this should be dropped to `1024`
 
 **node** - Settings for the rancher node(s) that run in the Rancher environment, this value should not be changed
 
-**count** - Default `3` This is the number of nodes to run
+- **count** - Default `3` This is the number of nodes to run
 
-**cpus** - Default `1` This is the number of vCPU's that each Rancher node should have
+- **cpus** - Default `1` This is the number of vCPU's that each Rancher node should have
 
-**memory** - Default `2048` This is the amount of RAM to be allocated to each Rancher node, if running on a machine with only 8GB this should be dropped to `1024`
+- **memory** - Default `2048` This is the amount of RAM to be allocated to each Rancher node, if running on a machine with only 8GB this should be dropped to `1024`
 
 **ip**  - This section defines the IP address ranges for the virtual machines
 
-**master** - Default `172.22.101.100`
+- **master** - Default `172.22.101.100`
 
-**server** - Default `172.22.101.101`
+- **server** - Default `172.22.101.101`
 
-**node** - Default `172.22.101.111`
+- **node** - Default `172.22.101.111`
 
 **linked_clones** - Default value `true` Leave as this as it reduces disk footprint
 
 **net** - Network Settings section, this should not be changed
 
-**private\_nic\_type** - Default `82545EM` this sometime needs to be changed to `82540EM` This is the network card that is emulated in the virtual machine
+- **private\_nic\_type** - Default `82545EM` this sometime needs to be changed to `82540EM` This is the network card that is emulated in the virtual machine
 
-**network\_type** - Default **private\_network**
+- **network\_type** - Default **private\_network**
 
 If you want to expose the Virtual Machines directly to the network this can be set to **public_network**
 
 **keys** - Subsection for defining keys to be used when enabling *external_ssh*. The public key will be placed onto all servers, the private key will be placed onto just the master node. You can then use the master node as a jump host to each of the remaining VM's, or access them directly with the ssh key
 
-**public_key** - This should be set to the path of the public key that needs to be uploaded
+- **public_key** - This should be set to the path of the public key that needs to be uploaded
 
-**private_key** - This should be set to the path of the private key that needs to be uploaded
+- **private_key** - This should be set to the path of the private key that needs to be uploaded
 
 **external_access** - To expose the setup to an external network
 
-**enabled** - Default value `false`, Change to true if you want to expose the master node to an external network`
+- **enabled** - Default value `false`, Change to true if you want to expose the master node to an external network`
 
-**ssh_port** - Default value `2277`, this is the port that the master node will be exposed on if you enabled *external\_ssh*
+- **ssh_port** - Default value `2277`, this is the port that the master node will be exposed on if you enabled *external\_ssh*
 
-**http_port** - set this value to the local port on the host to forward to port 80 on the master
+- **http_port** - set this value to the local port on the host to forward to port 80 on the master
 
-**https_port** - set this value to the local port on the host to forward to port 443 on the master
+- **https_port** - set this value to the local port on the host to forward to port 443 on the master
 
 ## Troubleshooting
 
