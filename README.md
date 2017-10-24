@@ -43,7 +43,7 @@ The setting for this needs to match the string that is stored in the SSL certifi
 
 **version** - Possible values `latest`, `stable`, `v1.x.x` where x.x is any release of Rancher Server
 
-This is the version of Rancher Server that you want to be deployed into you environment
+This is the version of Rancher Server that you want to be deployed into your environment
 
 **rancher\_env\_vars** - Pass through additional environment variables to the Rancher server
 
@@ -51,11 +51,11 @@ This is the version of Rancher Server that you want to be deployed into you envi
 
 **ROS_version** - The version of RancherOS for the nodes to run, possible values are `1.0.3` and `1.0.4`
 
-**master** - Settings for the master node that runs the proxy, registry mirror etc, this value should not be changed
+**master** - Settings for the master node that runs the proxy, registry mirror etc., this value should not be changed
 
 **cpus** - Default `1` This is the number of vCPU's that the master node should have
 
-**memory** - Default `1024` This is the amount of RAM to be allocated to the master node, If running on a machine with only 8GB this should be dropped to `512`
+**memory** - Default `1024` This is the amount of RAM to be allocated to the master node, if running on a machine with only 8GB this should be dropped to `512`
 
 **server** - Settings for the server node(s) that runs the Rancher Server, this value should not be changed
 
@@ -63,7 +63,7 @@ This is the version of Rancher Server that you want to be deployed into you envi
 
 **cpus** - Default `1` This is the number of vCPU's that each server node should have
 
-**memory** - Default `2048` This is the amount of RAM to be allocated to each server node, If running on a machine with only 8GB this should be dropped to `1024`
+**memory** - Default `2048` This is the amount of RAM to be allocated to each server node, if running on a machine with only 8GB this should be dropped to `1024`
 
 **node** - Settings for the rancher node(s) that run in the Rancher environment, this value should not be changed
 
@@ -71,7 +71,7 @@ This is the version of Rancher Server that you want to be deployed into you envi
 
 **cpus** - Default `1` This is the number of vCPU's that each Rancher node should have
 
-**memory** - Default `2048` This is the amount of RAM to be allocated to each Rancher node, If running on a machine with only 8GB this should be dropped to `1024`
+**memory** - Default `2048` This is the amount of RAM to be allocated to each Rancher node, if running on a machine with only 8GB this should be dropped to `1024`
 
 **ip**  - This section defines the IP address ranges for the virtual machines
 
@@ -89,7 +89,7 @@ This is the version of Rancher Server that you want to be deployed into you envi
 
 **network\_type** - Default **private\_network**
 
-If you wnat to expose the Virtual Machines directly to the network this can be set to **public_network**
+If you want to expose the Virtual Machines directly to the network this can be set to **public_network**
 
 **keys** - Subsection for defining keys to be used when enabling *external_ssh*. The public key will be placed onto all servers, the private key will be placed onto just the master node. You can then use the master node as a jump host to each of the remaining VM's, or access them directly with the ssh key
 
