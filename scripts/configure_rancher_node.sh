@@ -70,6 +70,8 @@ fi
 if [ "$sslenabled" == 'true' ]; then
   ros config set rancher.network.dns.nameservers ["'$cache_ip'"]
   system-docker restart network
+  mkdir -p /var/lib/rancher/etc/ssl
+  cp /home/rancher/ca.crt /var/lib/rancher/etc/ssl/ca.crt
 fi
 
 while true; do

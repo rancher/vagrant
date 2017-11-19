@@ -150,10 +150,7 @@ listen stats
     stats hide-version
     stats realm Haproxy\ Statistics
     stats uri /
-    stats auth Username:Password
-
-backend ha-nodes
-   default-server inter 3s fall 3 rise 2" > $config_path/haproxy.cfg
+    stats auth Username:Password" > $config_path/haproxy.cfg
 
 nextip(){
     IP=$1
@@ -163,28 +160,41 @@ nextip(){
     echo "$NEXT_IP"
 }
 
+if [ "$sslenabled" == 'true' ]; then
+echo "
+
+frontend main
+    bind 0.0.0.0:80
+    redirect scheme https if !{ ssl_fc }
+    bind 0.0.0.0:443 ssl crt /usr/local/etc/haproxy/haproxy.crt
+    default_backend ha-nodes
+    # Add headers for SSL offloading
+    http-request set-header X-Forwarded-Proto https if { ssl_fc }
+    http-request set-header X-Forwarded-Ssl on if { ssl_fc }
+
+backend ha-nodes
+   option httpchk HEAD /ping
+   default-server inter 3s fall 3 rise 2" >> $config_path/haproxy.cfg
+
+else
+echo "
+frontend main
+    bind 0.0.0.0:80
+    mode tcp
+    default_backend ha-nodes
+
+backend ha-nodes
+   mode tcp
+   option httpchk HEAD /ping
+   default-server inter 3s fall 3 rise 2" >> $config_path/haproxy.cfg
+fi
+
 IP=$rancher_server_ip
 for i in $(seq 1 $rancher_server_node); do
     echo "   server ha-$i $IP:8080 check" >> $config_path/haproxy.cfg
     IP=$(nextip $IP)
 done
 
-if [ "$sslenabled" == 'true' ]; then
-echo "
-frontend main
-    mode http
-    bind 0.0.0.0:80
-	  redirect scheme https if !{ ssl_fc }
-	  bind 0.0.0.0:443 ssl crt /usr/local/etc/haproxy/haproxy.crt	
-    reqadd X-Forwarded-Proto:\ https
-    default_backend ha-nodes" >> $config_path/haproxy.cfg
-else
-echo "
-frontend main
-    mode http
-    bind 0.0.0.0:80
-    default_backend ha-nodes" >> $config_path/haproxy.cfg
-fi
 
 docker stop haproxy
 docker rm haproxy
