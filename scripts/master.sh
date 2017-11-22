@@ -323,4 +323,5 @@ chmod 0400 id_rsa
 curl -L https://github.com/rancher/rke/releases/download/v0.0.3-dev/rke_linux-amd64 > rke
 chmod +x rke
 ./rke cluster up
+chown vagrant id_rsa
 #pull down RKE

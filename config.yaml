@@ -6,9 +6,9 @@ network_mode: normal
 sslenabled: 'false'
 ssldns: 'server.rancher.vagrant'
 # https://hub.docker.com/r/rancher/server/tags/
-version: latest
+version: preview
 #Pass through environment variables for Rancher Server to start with
-rancher_env_vars: ""
+rancher_env_vars: "-e CATTLE_API_HOST=http://172.22.101.100 -v /var/run/docker.sock:/var/run/docker.sock"
 agent_version: "v1.2.5"
 ROS_version: 1.0.3
 master:

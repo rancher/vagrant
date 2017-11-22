@@ -4,21 +4,21 @@ hosts:
   role:
   - controlplane
   - etcd
-  advertised_hostname: training-01
+  advertised_hostname: node-01
   user: vagrant
   docker_socket: /var/run/docker.sock
 - ip: 172.22.101.112
   advertise_address: 172.22.101.112
   role:
   - worker
-  advertised_hostname: training-02
+  advertised_hostname: node-02
   user: vagrant
   docker_socket: /var/run/docker.sock
 - ip: 172.22.101.113
   advertise_address: 172.22.101.113
   role:
   - worker
-  advertised_hostname: training-03
+  advertised_hostname: node-03
   user: vagrant
   docker_socket: /var/run/docker.sock
 services:
