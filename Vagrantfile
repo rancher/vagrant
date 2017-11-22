@@ -12,6 +12,25 @@ $external_ssh = x.fetch('external_access').fetch('enabled')
 
 Vagrant.configure(2) do |config|
 
+node_ip = IPAddr.new(x.fetch('ip').fetch('node'))
+  (1..x.fetch('node').fetch('count')).each do |i|
+    c = x.fetch('node')
+    hostname = "node-%02d" % i
+    config.vm.define hostname do |node|
+      node.vm.box   = "envimation/ubuntu-xenial-docker"
+      node.vm.guest = :ubuntu
+      node.vm.provider "virtualbox" do |v|
+        v.cpus = c.fetch('cpus')
+        v.linked_clone = true if Gem::Version.new(Vagrant::VERSION) >= Gem::Version.new('1.8.0') and x.fetch('linked_clones')
+        v.memory = c.fetch('memory')
+        v.name = hostname
+      end
+      node.vm.network x.fetch('net').fetch('network_type'), ip: IPAddr.new(node_ip.to_i + i - 1, Socket::AF_INET).to_s, nic_type: $private_nic_type
+      node.vm.hostname = hostname
+      node.vm.provision "shell", path: "scripts/configure_rancher_node.sh", args: [x.fetch('ip').fetch('master'), x.fetch('orchestrator'), x.fetch('network_mode'), x.fetch('sslenabled'), x.fetch('ssldns'), x.fetch('ip').fetch('master')]
+    end
+  end 
+
   config.vm.define "master" do |master|
     c = x.fetch('master')
     master.vm.box = "williamyeh/ubuntu-trusty64-docker"
@@ -22,6 +41,7 @@ Vagrant.configure(2) do |config|
       v.memory = c.fetch('memory')
       v.name = "master"
     end
+    master.vm.provision "file", source: "cluster.yml", destination: "/home/vagrant/cluster.yml"
     if x.fetch('external_access').fetch('enabled')
       master.vm.network "forwarded_port", guest: 22, host: x.fetch('external_access').fetch('ssh_port')
       master.vm.network "forwarded_port", guest: 80, host: x.fetch('external_access').fetch('http_port')
@@ -77,42 +97,5 @@ Vagrant.configure(2) do |config|
         ", privileged: false
         end
       end
-  end
-
-  node_ip = IPAddr.new(x.fetch('ip').fetch('node'))
-  (1..x.fetch('node').fetch('count')).each do |i|
-    c = x.fetch('node')
-    hostname = "node-%02d" % i
-    config.vm.define hostname do |node|
-      node.vm.box   = "chrisurwin/RancherOS"
-      node.vm.box_version = x.fetch('ROS_version')
-      node.vm.guest = :linux
-      node.vm.provider "virtualbox" do |v|
-        v.cpus = c.fetch('cpus')
-        v.linked_clone = true if Gem::Version.new(Vagrant::VERSION) >= Gem::Version.new('1.8.0') and x.fetch('linked_clones')
-        v.memory = c.fetch('memory')
-        v.name = hostname
-      end
-      if x.fetch('sslenabled')
-         node.vm.provision "file", source: "./certs/ca.crt", destination: "/home/rancher/ca.crt"
-      end
-      node.vm.network x.fetch('net').fetch('network_type'), ip: IPAddr.new(node_ip.to_i + i - 1, Socket::AF_INET).to_s, nic_type: $private_nic_type
-      node.vm.hostname = hostname
-      node.vm.provision "shell", path: "scripts/configure_rancher_node.sh", args: [x.fetch('ip').fetch('master'), x.fetch('orchestrator'), x.fetch('network_mode'), x.fetch('sslenabled'), x.fetch('ssldns'), x.fetch('ip').fetch('master')]
-      if File.file?(x.fetch('keys').fetch('private_key'))
-        config.vm.provision "file", source: x.fetch('keys').fetch('private_key'), destination: "/home/rancher/.ssh/id_rsa"
-      end
-      if File.file?(x.fetch('keys').fetch('public_key')) 
-        public_key = File.read(x.fetch('keys').fetch('public_key'))
-        node.vm.provision :shell, :inline =>"
-          echo 'Copying SSH Keys to the VM'
-          mkdir -p /home/rancher/.ssh
-          chmod 700 /home/rancher/.ssh
-          echo '#{public_key}' >> /home/rancher/.ssh/authorized_keys
-          chmod -R 600 /home/rancher/.ssh/authorized_keys
-        ", privileged: false
-        end
     end
   end
-
-end

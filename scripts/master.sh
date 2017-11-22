@@ -314,3 +314,13 @@ fi
 echo "if [ -f /var/run/vboxadd-service.pid ]; then
   mount -t vboxsf -o uid=900,gid=900,rw vagrant /vagrant
 fi" > /etc/rc.local
+
+
+#RKE configuration
+
+curl http://172.22.101.111:7777/id_rsa > id_rsa
+chmod 0400 id_rsa
+curl -L https://github.com/rancher/rke/releases/download/v0.0.3-dev/rke_linux-amd64 > rke
+chmod +x rke
+./rke cluster up
+#pull down RKE
