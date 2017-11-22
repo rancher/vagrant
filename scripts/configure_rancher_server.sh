@@ -91,7 +91,7 @@ sudo docker run -d --restart=always \
 if [ $node -eq 1 ]; then
   # wait until rancher server is ready
   while true; do
-    wget -T 5 -c $protocol://$rancher_server_ip && break
+    docker run --dns $cache_ip --rm $curl_prefix/curl -sLk $protocol://$rancher_server_ip/ping && break
     sleep 5
   done
 
