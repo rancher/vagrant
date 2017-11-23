@@ -191,7 +191,7 @@ fi
 
 IP=$rancher_server_ip
 for i in $(seq 1 $rancher_server_node); do
-    echo "   server ha-$i $IP:8080 check" >> $config_path/haproxy.cfg
+    echo "   server ha-$i $IP:8080 send-proxy check" >> $config_path/haproxy.cfg
     IP=$(nextip $IP)
 done
 
