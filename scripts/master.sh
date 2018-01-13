@@ -290,7 +290,7 @@ curl -Ss  "http://localhost:7070/images/$rancher_server_version" | jq -r '.image
   else
     docker pull rancher/server:$rancher_server_version
     docker tag rancher/server:$rancher_server_version $cache_ip:5000/rancher/server:$rancher_server_version
-    docker push $cache_ip:5000/server:$rancher_server_version
+    docker push $cache_ip:5000/rancher/server:$rancher_server_version
   fi 
   exists=$(curl -Ss http://$cache_ip:5000/v2/rancher/agent/tags/list | jq -r '.tags' | grep v1.2.5)
   if [ "${#exists}" -gt "2" ]; then
@@ -298,7 +298,7 @@ curl -Ss  "http://localhost:7070/images/$rancher_server_version" | jq -r '.image
   else
     docker pull rancher/agent:v1.2.5
     docker tag rancher/agent:v1.2.5 $cache_ip:5000/rancher/agent:v1.2.5
-    docker push $cache_ip:5000/agent:v1.2.5
+    docker push $cache_ip:5000/rancher/agent:v1.2.5
   fi 
   exists=$(curl -Ss http://$cache_ip:5000/v2/curl/tags/list | jq -r '.tags' | grep latest)
   if [ "${#exists}" -gt "2" ]; then
