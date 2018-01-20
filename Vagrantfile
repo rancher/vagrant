@@ -52,6 +52,7 @@ Vagrant.configure(2) do |config|
     hostname = "server-%02d" % i
     config.vm.define hostname do |server|
       server.vm.box= "chrisurwin/RancherOS"
+      server.vm.box_version = x.fetch('ROS_version')
       server.vm.guest = :linux
       server.vm.provider :virtualbox do |v|
         v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
