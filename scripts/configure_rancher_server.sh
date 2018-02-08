@@ -71,31 +71,57 @@ fi
 
 echo Installing Rancher Server
 sudo docker run -d --restart=always \
- -p 8080:8080 \
- -p 8088:8088 \
+ -p 443:443 \
+ -p 80:80 \
  -p 1044:1044 \
  -p 9345:9345 \
- $EXTRA_OPTS \
- -e CATTLE_JAVA_OPTS="$CATTLE_JAVA_OPTS" \
  $rancher_env_vars \
  --restart=unless-stopped \
  --name rancher-server \
- $rancher_command \
- --db-host $cache_ip \
- --db-port 3306 \
- --db-name cattle \
- --db-user root \
- --db-pass cattle \
- --advertise-address `ifconfig eth1 | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1}'`
+$rancher_command
 
 if [ $node -eq 1 ]; then
   # wait until rancher server is ready
   while true; do
-    wget -T 5 -c $protocol://$rancher_server_ip && break
+    wget -T 5 -c https://localhost/ping && break
     sleep 5
   done
 
   set -e
+
+# Login
+LOGINRESPONSE=$(docker run --net=host \
+    --rm \
+    $curl_prefix/curl \
+    -s "https://127.0.0.1/v3-public/localProviders/local?action=login" -H 'content-type: application/json' --data-binary '{"username":"admin","password":"admin"}' --insecure)
+LOGINTOKEN=$(echo $LOGINRESPONSE | jq -r .token)
+
+# Change password
+docker run --net=host \
+    --rm \
+    $curl_prefix/curl \
+     -s "https://127.0.0.1/v3/users?action=changepassword" -H 'content-type: application/json' -H "Authorization: Bearer $LOGINTOKEN" --data-binary '{"currentPassword":"admin","newPassword":"thisisyournewpassword"}' --insecure
+
+# Create API key
+APIRESPONSE=$(docker run --net host \
+    --rm \
+    $curl_prefix/curl \
+     -s "https://127.0.0.1/v3/token" -H 'content-type: application/json' -H "Authorization: Bearer $LOGINTOKEN" --data-binary '{"type":"token","description":"automation","name":""}' --insecure)
+#Extract and store token
+APITOKEN=$(echo $APIRESPONSE | jq -r .token)
+
+# Create cluster
+CLUSTERRESPONSE=$(docker run --net=host\
+    --rm \
+    $curl_prefix/curl \
+     -s "https://127.0.0.1/v3/cluster" -H 'content-type: application/json' -H "Authorization: Bearer $APITOKEN" --data-binary '{"type":"cluster","nodes":[],"rancherKubernetesEngineConfig":{"type":"rancherKubernetesEngineConfig","hosts":[],"network":{"options":[],"plugin":"flannel"},"ignoreDockerVersion":true,"services":{"kubeApi":{"serviceClusterIpRange":"10.233.0.0/18","podSecurityPolicy":false,"extraArgs":{"v":"4"}},"kubeController":{"clusterCidr":"10.233.64.0/18","serviceClusterIpRange":"10.233.0.0/18"},"kubelet":{"clusterDnsServer":"10.233.0.3","clusterDomain":"cluster.local","infraContainerImage":"gcr.io/google_containers/pause-amd64:3.0"}},"authentication":{"options":[],"strategy":"x509"}},"googleKubernetesEngineConfig":null,"name":"yournewcluster","id":""}' --insecure)
+# Extract clusterid to use for generating the docker run command
+CLUSTERID=$(echo $CLUSTERRESPONSE | jq -r .id)
+
+
+
+
+
 
   # disable telemetry for developers
  docker run \

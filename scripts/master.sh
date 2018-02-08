@@ -66,30 +66,6 @@ docker run -d --restart=always --name redis-mirror -p 6379 -v $share_path/redis:
 docker run -d --restart=always -p 4000:5000 --name v2-mirror \
   -v $share_path:/var/lib/registry --link redis-mirror:redis registry:2 /var/lib/registry/config.yml
 
-# Allow for --provison to clean the cattle DB
-docker stop mysql
-docker rm mysql
-
-echo Install MySQL
-docker run \
-  -d \
-  --name mysql \
-  -p 3306:3306 \
-  --net=host \
-  --restart=always \
-  -v mysql:/var/lib/mysql \
-  -e MYSQL_ROOT_PASSWORD=cattle \
-  mysql:5.7.18
-
-if [ $? -eq 0 ]; then
-  sleep 15
-  echo Creating database
-  docker exec -i mysql \
-    mysql \
-      --password=cattle \
-      -e "CREATE DATABASE IF NOT EXISTS cattle COLLATE = 'utf8_general_ci' CHARACTER SET = 'utf8';"
-fi
-
 #Setup haproxy for Rancher HA
 
 echo "#---------------------------------------------------------------------
@@ -143,7 +119,7 @@ nextip(){
 
 IP=$rancher_server_ip
 for i in $(seq 1 $rancher_server_node); do
-    echo "   server ha-$i $IP:8080 check" >> $share_path/haproxy.cfg
+    echo "   server ha-$i $IP:80 check" >> $share_path/haproxy.cfg
     IP=$(nextip $IP)
 done
 
