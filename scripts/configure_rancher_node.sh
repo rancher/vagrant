@@ -7,6 +7,7 @@ ssldns=${5:-server.rancher.vagrant}
 cache_ip=${6:-172.22.101.100}
 
 agent_ip=`ip addr show eth1 | grep "inet\b" | awk '{print $2}' | cut -d/ -f1`
+ip route add 8.8.8.8 dev eth1 src $agent_ip
 
 curl_prefix="appropriate"
 if [ "$sslenabled" == 'true' ]; then
