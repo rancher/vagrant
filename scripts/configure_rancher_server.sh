@@ -114,13 +114,15 @@ APITOKEN=$(echo $APIRESPONSE | jq -r .token)
 CLUSTERRESPONSE=$(docker run --net=host\
     --rm \
     $curl_prefix/curl \
-     -s "https://127.0.0.1/v3/cluster" -H 'content-type: application/json' -H "Authorization: Bearer $APITOKEN" --data-binary '{"type":"cluster","nodes":[],"rancherKubernetesEngineConfig":{"type":"rancherKubernetesEngineConfig","hosts":[],"network":{"options":[],"plugin":"flannel"},"ignoreDockerVersion":true,"services":{"kubeApi":{"serviceClusterIpRange":"10.233.0.0/18","podSecurityPolicy":false,"extraArgs":{"v":"4"}},"kubeController":{"clusterCidr":"10.233.64.0/18","serviceClusterIpRange":"10.233.0.0/18"},"kubelet":{"clusterDnsServer":"10.233.0.3","clusterDomain":"cluster.local","infraContainerImage":"gcr.io/google_containers/pause-amd64:3.0"}},"authentication":{"options":[],"strategy":"x509"}},"googleKubernetesEngineConfig":null,"name":"yournewcluster","id":""}' --insecure)
+     -s "https://127.0.0.1/v3/cluster" -H 'content-type: application/json' -H "Authorization: Bearer $APITOKEN" --data-binary '{"type":"cluster","nodes":[],"rancherKubernetesEngineConfig":{"type":"rancherKubernetesEngineConfig","hosts":[],"network":{"options":{"flannel_iface":"eth1"},"plugin":"flannel"},"ignoreDockerVersion":true,"services":{"kubeApi":{"serviceClusterIpRange":"10.233.0.0/18","podSecurityPolicy":false,"extraArgs":{"v":"4"}},"kubeController":{"clusterCidr":"10.233.64.0/18","serviceClusterIpRange":"10.233.0.0/18"},"kubelet":{"clusterDnsServer":"10.233.0.3","clusterDomain":"cluster.local","infraContainerImage":"gcr.io/google_containers/pause-amd64:3.0"}},"authentication":{"options":[],"strategy":"x509"}},"googleKubernetesEngineConfig":null,"name":"yournewcluster","id":""}' --insecure)
 # Extract clusterid to use for generating the docker run command
 CLUSTERID=$(echo $CLUSTERRESPONSE | jq -r .id)
 
 
-
-
+AGENTTOKEN=$(docker run --net=host\
+    --rm \
+    $curl_prefix/curl \
+    -s 'https://127.0.0.1/v3/clusterregistrationtoken' -H 'content-type: application/json' -H "Authorization: Bearer $APITOKEN" --data-binary '{"type":"clusterRegistrationToken","clusterId":"'$CLUSTERID'"}' --insecure | jq -r .token)
 
 
   # disable telemetry for developers
