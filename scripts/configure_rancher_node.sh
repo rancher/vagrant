@@ -93,7 +93,12 @@ AGENTIMAGE=$(docker run --net host \
     --rm \
     $curl_prefix/curl -s -H "Authorization: Bearer $LOGINTOKEN" https://$rancher_server_ip/v3/settings/agent-image --insecure | jq -r .value)
 
-ROLEFLAGS="--etcd --controlplane --worker"
+if [ `hostname` == "node-01" ]; then
+  ROLEFLAGS="--etcd --controlplane --worker"
+else
+  ROLEFLAGS="--worker"
+fi
+
 
 RANCHERSERVER="https://$rancher_server_ip"
 
