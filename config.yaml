@@ -1,5 +1,4 @@
-# cattle|kubernetes|swarm|mesos
-orchestrator: kubernetes
+default_password: password1
 # 'true'|'false' isolated network requiring proxy. must be in ''
 network_mode: normal
 # 'true'|'false'

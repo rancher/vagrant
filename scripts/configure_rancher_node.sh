@@ -1,6 +1,6 @@
 #!/bin/bash -x
 rancher_server_ip=172.22.101.101
-orchestrator=${2:-cattle}
+default_password=${2:-password}
 network_type=${3:-false}
 sslenabled=${4:-false}
 ssldns=${5:-server.rancher.vagrant}
@@ -21,11 +21,11 @@ if [ "$network_type" == "airgap" ] ; then
   curlprefix="$cache_ip:5000"
 fi
 
-if [ "$orchestrator" == "kubernetes" ] && [ ! "$(ros engine list | grep current | grep docker-1.12.6)" ]; then
+#if [ "$orchestrator" == "kubernetes" ] && [ ! "$(ros engine list | grep current | grep docker-1.12.6)" ]; then
   ros engine switch docker-1.12.6
   system-docker restart docker
   sleep 5
-fi
+#fi
 
 ros config set rancher.docker.insecure_registry "['$cache_ip:5000']"
 if [ ! "$network_type" == "airgap" ] ; then
@@ -79,7 +79,7 @@ fi
 LOGINRESPONSE=$(docker run \
     --rm \
     $curl_prefix/curl \
-    -s "https://$rancher_server_ip/v3-public/localProviders/local?action=login" -H 'content-type: application/json' --data-binary '{"username":"admin","password":"thisisyournewpassword"}' --insecure)
+    -s "https://$rancher_server_ip/v3-public/localProviders/local?action=login" -H 'content-type: application/json' --data-binary '{"username":"admin","password":"'$default_password'"}' --insecure)
 LOGINTOKEN=$(echo $LOGINRESPONSE | jq -r .token)
 
 CLUSTERRESPONSE=$(docker run --net host \

@@ -1,7 +1,7 @@
 #!/bin/bash -x
 
 rancher_server_ip=${1:-172.22.101.100}
-orchestrator=${2:-cattle}
+default_password=${2:-password}
 node=${3:-3}
 rancher_server_version=${4:-stable}
 network_type=${5:-false}
@@ -100,7 +100,7 @@ LOGINTOKEN=$(echo $LOGINRESPONSE | jq -r .token)
 docker run --net=host \
     --rm \
     $curl_prefix/curl \
-     -s "https://127.0.0.1/v3/users?action=changepassword" -H 'content-type: application/json' -H "Authorization: Bearer $LOGINTOKEN" --data-binary '{"currentPassword":"admin","newPassword":"thisisyournewpassword"}' --insecure
+     -s "https://127.0.0.1/v3/users?action=changepassword" -H 'content-type: application/json' -H "Authorization: Bearer $LOGINTOKEN" --data-binary '{"currentPassword":"admin","newPassword":"'$default_password'"}' --insecure
 
 # Create API key
 APIRESPONSE=$(docker run --net host \
@@ -114,16 +114,9 @@ APITOKEN=$(echo $APIRESPONSE | jq -r .token)
 CLUSTERRESPONSE=$(docker run --net=host\
     --rm \
     $curl_prefix/curl \
-     -s "https://127.0.0.1/v3/cluster" -H 'content-type: application/json' -H "Authorization: Bearer $APITOKEN" --data-binary '{"type":"cluster","nodes":[],"rancherKubernetesEngineConfig":{"type":"rancherKubernetesEngineConfig","hosts":[],"network":{"options":{"flannel_iface":"eth1"},"plugin":"flannel"},"ignoreDockerVersion":true,"services":{"kubeApi":{"serviceClusterIpRange":"10.233.0.0/18","podSecurityPolicy":false,"extraArgs":{"v":"4"}},"kubeController":{"clusterCidr":"10.233.64.0/18","serviceClusterIpRange":"10.233.0.0/18"},"kubelet":{"clusterDnsServer":"10.233.0.3","clusterDomain":"cluster.local","infraContainerImage":"gcr.io/google_containers/pause-amd64:3.0"}},"authentication":{"options":[],"strategy":"x509"}},"googleKubernetesEngineConfig":null,"name":"yournewcluster","id":""}' --insecure)
+     -s "https://127.0.0.1/v3/cluster" -H 'content-type: application/json' -H "Authorization: Bearer $APITOKEN" --data-binary '{"type":"cluster","nodes":[],"rancherKubernetesEngineConfig":{"type":"rancherKubernetesEngineConfig","hosts":[],"network":{"options":[],"plugin":"flannel"},"ignoreDockerVersion":true,"services":{"kubeApi":{"serviceClusterIpRange":"10.233.0.0/18","podSecurityPolicy":false,"extraArgs":{"v":"4"}},"kubeController":{"clusterCidr":"10.233.64.0/18","serviceClusterIpRange":"10.233.0.0/18"},"kubelet":{"clusterDnsServer":"10.233.0.3","clusterDomain":"cluster.local","infraContainerImage":"gcr.io/google_containers/pause-amd64:3.0"}},"authentication":{"options":[],"strategy":"x509"}},"googleKubernetesEngineConfig":null,"name":"yournewcluster","id":""}' --insecure)
 # Extract clusterid to use for generating the docker run command
 CLUSTERID=$(echo $CLUSTERRESPONSE | jq -r .id)
-
-
-AGENTTOKEN=$(docker run --net=host\
-    --rm \
-    $curl_prefix/curl \
-    -s 'https://127.0.0.1/v3/clusterregistrationtoken' -H 'content-type: application/json' -H "Authorization: Bearer $APITOKEN" --data-binary '{"type":"clusterRegistrationToken","clusterId":"'$CLUSTERID'"}' --insecure | jq -r .token)
-
 
   # disable telemetry for developers
  docker run \
@@ -136,6 +129,11 @@ AGENTTOKEN=$(docker run --net=host\
       -d '{"type":"setting","name":"telemetry.opt","value":"out"}' \
         "$protocol://$rancher_server_ip/v3/setting"
 
+AGENTTOKEN=$(docker run --net=host\
+    --rm \
+    $curl_prefix/curl \
+    -s 'https://127.0.0.1/v3/clusterregistrationtoken' -H 'content-type: application/json' -H "Authorization: Bearer $APITOKEN" --data-binary '{"type":"clusterRegistrationToken","clusterId":"'$CLUSTERID'"}' --insecure | jq -r .token)
+    
  # set default registry for Rancher images
  if [ "$network_type" == "airgap" ] ; then
  docker run \
