@@ -7,9 +7,8 @@ ssldns=${5:-server.rancher.vagrant}
 cache_ip=${6:-172.22.101.100}
 
 agent_ip=`ip addr show eth1 | grep "inet\b" | awk '{print $2}' | cut -d/ -f1`
-ip route add 8.8.8.8 dev eth1 src $agent_ip
 
-curl_prefix="appropriate"
+curlprefix="appropriate"
 if [ "$sslenabled" == 'true' ]; then
   protocol="https"
   rancher_server_ip=$ssldns
@@ -78,20 +77,32 @@ fi
 # Login
 LOGINRESPONSE=$(docker run \
     --rm \
-    $curl_prefix/curl \
+    $curlprefix/curl \
     -s "https://$rancher_server_ip/v3-public/localProviders/local?action=login" -H 'content-type: application/json' --data-binary '{"username":"admin","password":"'$default_password'"}' --insecure)
 LOGINTOKEN=$(echo $LOGINRESPONSE | jq -r .token)
 
+# Test if cluster is created
+while true; do
+  ENV_STATE=$(docker run \
+    --rm \
+    $curlprefix/curl \
+      -sLk \
+      -H "Authorization: Bearer $LOGINTOKEN" \
+      "https://$rancher_server_ip/v3/clusterregistrationtoken?name=myfirstcluster" | jq -r '.data[].nodeCommand')
+
+  if [[ "$ENV_STATE" != "null" ]]; then
+    break
+  else
+    sleep 5
+  fi
+done
+
 CLUSTERRESPONSE=$(docker run --net host \
     --rm \
-    $curl_prefix/curl -s "https://$rancher_server_ip/v3/clusters?name=yournewcluster" -H 'content-type: application/json' -H "Authorization: Bearer $LOGINTOKEN" --insecure)
+    $curlprefix/curl -s "https://$rancher_server_ip/v3/clusters?name=myfirstcluster" -H 'content-type: application/json' -H "Authorization: Bearer $LOGINTOKEN" --insecure)
+
 # Extract clusterid to use for generating the docker run command
 CLUSTERID=`echo $CLUSTERRESPONSE | jq -r .data[].id`
-
-# Generate docker run
-AGENTIMAGE=$(docker run --net host \
-    --rm \
-    $curl_prefix/curl -s -H "Authorization: Bearer $LOGINTOKEN" https://$rancher_server_ip/v3/settings/agent-image --insecure | jq -r .value)
 
 if [ `hostname` == "node-01" ]; then
   ROLEFLAGS="--etcd --controlplane --worker"
@@ -99,20 +110,11 @@ else
   ROLEFLAGS="--worker"
 fi
 
-
-RANCHERSERVER="https://$rancher_server_ip"
-
-# Generate token (clusterRegistrationToken)
-AGENTTOKEN=$(docker run --net host \
+# Get token
+AGENTCMD=$(docker run --net host \
     --rm \
-    $curl_prefix/curl -s "https://$rancher_server_ip/v3/clusterregistrationtoken?name=$CLUSTERID" -H 'content-type: application/json' -H "Authorization: Bearer $LOGINTOKEN" --insecure | jq -r .data[].token)
+    $curlprefix/curl -s "https://$rancher_server_ip/v3/clusterregistrationtoken?id=$CLUSTERID" -H 'content-type: application/json' -H "Authorization: Bearer $LOGINTOKEN" --insecure | jq -r .data[].nodeCommand)
 
-# Retrieve CA certificate and generate checksum
-CACHECKSUM=$(docker run --net host \
-    --rm \
-    $curl_prefix/curl -s -H "Authorization: Bearer $LOGINTOKEN" https://$rancher_server_ip/v3/settings/cacerts --insecure | jq -r .value | sha256sum | awk '{ print $1 }')
-
-# Assemble the docker run command
-AGENTCOMMAND="docker run -d --restart=unless-stopped -v /var/run/docker.sock:/var/run/docker.sock --net=host $AGENTIMAGE $ROLEFLAGS --server $RANCHERSERVER --token $AGENTTOKEN --ca-checksum $CACHECKSUM --address $agent_ip --internal-address $agent_ip"
 # Show the command
-$AGENTCOMMAND
+COMPLETECMD="$AGENTCMD $ROLEFLAGS --address $agent_ip"
+$COMPLETECMD
