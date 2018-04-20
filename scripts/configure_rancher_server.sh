@@ -1,6 +1,6 @@
 #!/bin/bash -x
 
-rancher_server_ip=${1:-172.22.101.100}
+rancher_server_ip="172.22.101.101"
 default_password=${2:-password}
 node=${3:-3}
 rancher_server_version=${4:-stable}
@@ -73,27 +73,23 @@ echo Installing Rancher Server
 sudo docker run -d --restart=always \
  -p 443:443 \
  -p 80:80 \
- -p 1044:1044 \
- -p 9345:9345 \
  $rancher_env_vars \
  --restart=unless-stopped \
  --name rancher-server \
 $rancher_command
 
-if [ $node -eq 1 ]; then
-  # wait until rancher server is ready
-  while true; do
-    wget -T 5 -c https://localhost/ping && break
-    sleep 5
-  done
-
-  set -e
+# wait until rancher server is ready
+while true; do
+  wget -T 5 -c https://localhost/ping && break
+  sleep 5
+done
 
 # Login
 LOGINRESPONSE=$(docker run --net=host \
     --rm \
     $curl_prefix/curl \
     -s "https://127.0.0.1/v3-public/localProviders/local?action=login" -H 'content-type: application/json' --data-binary '{"username":"admin","password":"admin"}' --insecure)
+
 LOGINTOKEN=$(echo $LOGINRESPONSE | jq -r .token)
 
 # Change password
@@ -107,44 +103,28 @@ APIRESPONSE=$(docker run --net host \
     --rm \
     $curl_prefix/curl \
      -s "https://127.0.0.1/v3/token" -H 'content-type: application/json' -H "Authorization: Bearer $LOGINTOKEN" --data-binary '{"type":"token","description":"automation","name":""}' --insecure)
-#Extract and store token
+
+# Extract and store token
 APITOKEN=$(echo $APIRESPONSE | jq -r .token)
 
+# Configure server-url
+SERVERURLRESPONSE=$(docker run --net host \
+    --rm \
+    $curl_prefix/curl \
+     -s 'https://127.0.0.1/v3/settings/server-url' -H 'content-type: application/json' -H "Authorization: Bearer $APITOKEN" -X PUT --data-binary '{"name":"server-url","value":"https://'$rancher_server_ip'"}' --insecure)
+
 # Create cluster
-CLUSTERRESPONSE=$(docker run --net=host\
+CLUSTERRESPONSE=$(docker run --net host \
     --rm \
     $curl_prefix/curl \
-     -s "https://127.0.0.1/v3/cluster" -H 'content-type: application/json' -H "Authorization: Bearer $APITOKEN" --data-binary '{"type":"cluster","nodes":[],"rancherKubernetesEngineConfig":{"type":"rancherKubernetesEngineConfig","hosts":[],"network":{"options":[],"plugin":"flannel"},"ignoreDockerVersion":true,"services":{"kubeApi":{"serviceClusterIpRange":"10.233.0.0/18","podSecurityPolicy":false,"extraArgs":{"v":"4"}},"kubeController":{"clusterCidr":"10.233.64.0/18","serviceClusterIpRange":"10.233.0.0/18"},"kubelet":{"clusterDnsServer":"10.233.0.3","clusterDomain":"cluster.local","infraContainerImage":"gcr.io/google_containers/pause-amd64:3.0"}},"authentication":{"options":[],"strategy":"x509"}},"googleKubernetesEngineConfig":null,"name":"yournewcluster","id":""}' --insecure)
+     -s 'https://127.0.0.1/v3/cluster' -H 'content-type: application/json' -H "Authorization: Bearer $APITOKEN" \
+     --data-binary '{"type":"cluster","rancherKubernetesEngineConfig":{"ignoreDockerVersion":false,"sshAgentAuth":false,"type":"rancherKubernetesEngineConfig","kubernetesVersion":"v1.8.10-rancher1-1","authentication":{"type":"authnConfig","strategy":"x509"},"network":{"type":"networkConfig","plugin":"flannel","flannelNetworkProvider":{"iface":"eth1"},"calicoNetworkProvider":null},"ingress":{"type":"ingressConfig","provider":"nginx"},"services":{"type":"rkeConfigServices","kubeApi":{"podSecurityPolicy":false,"type":"kubeAPIService"},"etcd":{"type":"etcdService","extraArgs":{"heartbeat-interval":500,"election-timeout":5000}}}},"name":"myfirstcluster"}' --insecure)
+
 # Extract clusterid to use for generating the docker run command
-CLUSTERID=$(echo $CLUSTERRESPONSE | jq -r .id)
+CLUSTERID=`echo $CLUSTERRESPONSE | jq -r .id`
 
-  # disable telemetry for developers
- docker run \
+# Generate cluster registration token
+CLUSTERREGTOKEN=$(docker run --net=host \
     --rm \
     $curl_prefix/curl \
-      -sLk \
-      -X POST \
-      -H 'Accept: application/json' \
-      -H 'Content-Type: application/json' \
-      -d '{"type":"setting","name":"telemetry.opt","value":"out"}' \
-        "$protocol://$rancher_server_ip/v3/setting"
-
-AGENTTOKEN=$(docker run --net=host\
-    --rm \
-    $curl_prefix/curl \
-    -s 'https://127.0.0.1/v3/clusterregistrationtoken' -H 'content-type: application/json' -H "Authorization: Bearer $APITOKEN" --data-binary '{"type":"clusterRegistrationToken","clusterId":"'$CLUSTERID'"}' --insecure | jq -r .token)
-    
- # set default registry for Rancher images
- if [ "$network_type" == "airgap" ] ; then
- docker run \
-    --rm \
-    $curl_prefix/curl \
-      -sLk \
-      -X POST \
-      -H 'Accept: application/json' \
-      -H 'Content-Type: application/json' \
-      -d '{"type":"setting","name":"registry.default","value":"'$cache_ip':5000"}' \
-        "$protocol://$rancher_server_ip/v3/setting"
-
-fi
-fi
+     -s 'https://127.0.0.1/v3/clusterregistrationtoken' -H 'content-type: application/json' -H "Authorization: Bearer $APITOKEN" --data-binary '{"type":"clusterRegistrationToken","clusterId":"'$CLUSTERID'"}' --insecure)
