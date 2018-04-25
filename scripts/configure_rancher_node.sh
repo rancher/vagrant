@@ -22,6 +22,7 @@ fi
 
 #if [ "$orchestrator" == "kubernetes" ] && [ ! "$(ros engine list | grep current | grep docker-1.12.6)" ]; then
   ros engine switch docker-1.12.6
+  ros config set rancher.docker.storage_driver overlay
   system-docker restart docker
   sleep 5
 #fi

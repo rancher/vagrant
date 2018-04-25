@@ -34,6 +34,7 @@ if [ ! "$network_type" == "airgap" ] ; then
     ros config set rancher.system_docker.environment "['http_proxy=http://$cache_ip:3128','https_proxy=http://$cache_ip:3128','HTTP_PROXY=http://$cache_ip:3128','HTTPS_PROXY=http://$cache_ip:3128','no_proxy=server.rancher.vagrant,localhost,127.0.0.1','NO_PROXY=server.rancher.vagrant,localhost,127.0.0.1']"
   fi
 fi
+  ros config set rancher.docker.storage_driver overlay
   ros engine switch docker-1.12.6
 system-docker restart docker
 sleep 5
