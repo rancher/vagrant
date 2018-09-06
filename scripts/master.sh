@@ -8,9 +8,11 @@ rancher_server_version=${6:-latest}
 password=${7:-rancher}
 
 
+sed -i -e 's/http:\/\/us.archive/mirror:\/\/mirrors/' -e 's/\/ubuntu\//\/mirrors.txt/' /etc/apt/sources.list
+
 apt-get update
-apt-get install jq
-apt-get install docker-engine
+apt-get install -yq jq
+apt-get install -yq docker-engine
 
 
 echo "DOCKER_OPTS=\"\$DOCKER_OPTS --registry-mirror http://$cache_ip:4000 --insecure-registry http://$cache_ip:5000 --insecure-registry http://$cache_ip:4000\"" >> /etc/default/docker
