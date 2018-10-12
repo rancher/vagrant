@@ -65,9 +65,9 @@ fi
 rancher_command=""
 if [ "$network_type" == "airgap" ]; then
   EXTRA_OPTS="-e CATTLE_BOOTSTRAP_REQUIRED_IMAGE=$cache_ip:5000/rancher/agent:v1.2.5"
-  rancher_command="$registry_prefix/rancher/server:$rancher_server_version" 
+  rancher_command="$registry_prefix/rancher/rancher:$rancher_server_version"
 else
-  rancher_command="rancher/server:$rancher_server_version" 
+  rancher_command="rancher/rancher:$rancher_server_version"
 fi
 
 echo Installing Rancher Server
