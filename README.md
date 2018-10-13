@@ -19,11 +19,19 @@ clone the directory and then run **vagrant up**
 
 This has been tested with vagrant 1.9.1 and VirtualBox 5.0.32. If you experience issues with the networking it is likely related to running an older version.
 
+To use Rancher 2.x, clone the repo and then switch to the 2.0 branch
+
+```
+git clone https://github.com/rancher/vagrant.git
+git checkout 2.0
+vagrant up
+```
+
 ## Config
 
 The config.yml contains any variables that you should need to change, below is a description of the variables and their values:
 
-**orchestrator** - Possible values are `cattle`, `kubernetes`, `mesos` and `swarm` 
+**orchestrator** - Works with 1.6 only. Possible values are `cattle`, `kubernetes`, `mesos` and `swarm` 
 
 This sets the orchestrator that will be used for the environment, as part of the process the Default environment is deleted and we create a new one with the name of the orchestrator. 
 
