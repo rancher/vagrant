@@ -4,13 +4,12 @@ network_mode: normal
 # 'true'|'false'
 sslenabled: 'false'
 ssldns: 'server.rancher.vagrant'
-# https://hub.docker.com/r/rancher/server/tags/
-version: master
+# https://hub.docker.com/r/rancher/rancher/tags/
+version: stable
 kubernetes_version: v1.11.2-rancher1-1
 #Pass through environment variables for Rancher Server to start with
 rancher_env_vars: ""
-agent_version: "v1.2.5"
-ROS_version: 1.0.3
+ROS_version: 1.4.0
 master:
   cpus: 1
   memory: 1024
