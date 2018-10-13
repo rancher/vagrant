@@ -6,6 +6,7 @@ sslenabled: 'false'
 ssldns: 'server.rancher.vagrant'
 # https://hub.docker.com/r/rancher/server/tags/
 version: master
+kubernetes_version: v1.11.2-rancher1-1
 #Pass through environment variables for Rancher Server to start with
 rancher_env_vars: ""
 agent_version: "v1.2.5"

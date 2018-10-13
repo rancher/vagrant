@@ -4,6 +4,7 @@ rancher_server_ip="172.22.101.101"
 default_password=${2:-password}
 node=${3:-3}
 rancher_server_version=${4:-stable}
+kubernetes_version=${10:-v1.11.2-rancher1-1}
 network_type=${5:-false}
 sslenabled=${6:-false}
 ssldns=${7:-server.rancher.vagrant}
@@ -119,7 +120,7 @@ CLUSTERRESPONSE=$(docker run --net host \
     --rm \
     $curl_prefix/curl \
      -s 'https://127.0.0.1/v3/cluster' -H 'content-type: application/json' -H "Authorization: Bearer $APITOKEN" \
-     --data-binary '{"type":"cluster","rancherKubernetesEngineConfig":{"ignoreDockerVersion":false,"sshAgentAuth":false,"type":"rancherKubernetesEngineConfig","kubernetesVersion":"v1.8.10-rancher1-1","authentication":{"type":"authnConfig","strategy":"x509"},"network":{"type":"networkConfig","plugin":"flannel","flannelNetworkProvider":{"iface":"eth1"},"calicoNetworkProvider":null},"ingress":{"type":"ingressConfig","provider":"nginx"},"services":{"type":"rkeConfigServices","kubeApi":{"podSecurityPolicy":false,"type":"kubeAPIService"},"etcd":{"type":"etcdService","extraArgs":{"heartbeat-interval":500,"election-timeout":5000}}}},"name":"myfirstcluster"}' --insecure)
+     --data-binary "{\"type\":\"cluster\",\"rancherKubernetesEngineConfig\":{\"ignoreDockerVersion\":false,\"sshAgentAuth\":false,\"type\":\"rancherKubernetesEngineConfig\",\"kubernetesVersion\":\"$kubernetes_version\",\"authentication\":{\"type\":\"authnConfig\",\"strategy\":\"x509\"},\"network\":{\"type\":\"networkConfig\",\"plugin\":\"flannel\",\"flannelNetworkProvider\":{\"iface\":\"eth1\"},\"calicoNetworkProvider\":null},\"ingress\":{\"type\":\"ingressConfig\",\"provider\":\"nginx\"},\"services\":{\"type\":\"rkeConfigServices\",\"kubeApi\":{\"podSecurityPolicy\":false,\"type\":\"kubeAPIService\"},\"etcd\":{\"type\":\"etcdService\",\"extraArgs\":{\"heartbeat-interval\":500,\"election-timeout\":5000}}}},\"name\":\"myfirstcluster\"}" --insecure)
 
 # Extract clusterid to use for generating the docker run command
 CLUSTERID=`echo $CLUSTERRESPONSE | jq -r .id`
