@@ -20,12 +20,10 @@ if [ "$network_type" == "airgap" ] ; then
   curlprefix="$cache_ip:5000"
 fi
 
-#if [ "$orchestrator" == "kubernetes" ] && [ ! "$(ros engine list | grep current | grep docker-1.12.6)" ]; then
-  ros engine switch docker-1.12.6
-  ros config set rancher.docker.storage_driver overlay
-  system-docker restart docker
-  sleep 5
-#fi
+ros engine switch docker-1.12.6
+ros config set rancher.docker.storage_driver overlay
+system-docker restart docker
+sleep 5
 
 ros config set rancher.docker.insecure_registry "['$cache_ip:5000']"
 if [ ! "$network_type" == "airgap" ] ; then
